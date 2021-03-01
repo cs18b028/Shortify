@@ -1,0 +1,2 @@
+# Shortify
+Intent-based Summarizer
