@@ -1,101 +1,101 @@
-id,score
-48641350,0.7999605608351992
-46362972,0.785947125994178
-1158128,0.750188953132557
-44476206,0.7499202563121361
-58971955,0.709933691153157
-35526224,0.701170256312136
-49734759,0.6749874305172413
-34761978,0.6600680395633676
-30620323,0.6600411698813256
-55397854,0.659947125994178
-48744137,0.659920256312136
-58967559,0.659920256312136
-44155727,0.6551996213915011
-57508214,0.6211971259941781
-36683756,0.6199605608351991
-57354626,0.6129559705978503
-58220001,0.6076420244864904
-48926974,0.5999471259941781
-52502495,0.5999471259941781
-57531604,0.5999336911531571
-52855568,0.5688979768674427
-47667379,0.565545256312136
-58802412,0.5620899831370352
-58259762,0.5571302876600983
-47714900,0.5570765482960142
-59513995,0.5479739956762202
-52480347,0.5435722939296909
-52879192,0.539933691153157
-60242599,0.539920256312136
-42265239,0.5250143001992833
-55770240,0.5199336911531571
-46625843,0.5117518729713388
-38978214,0.5082372439222271
-38745759,0.5079336911531571
-45532699,0.5066540971839079
-59522083,0.5015035896454694
-48832687,0.5000143001992834
-44484520,0.4999739956762202
-60115110,0.4999336911531571
-44109813,0.499920256312136
-59223852,0.499920256312136
-35785109,0.4929954167838481
-56088692,0.4913622625817285
-22306340,0.48592025631213603
-60330020,0.48319387924093127
-52426495,0.47992025631213603
-60025252,0.47992025631213603
-59863801,0.4772416848835645
-43399506,0.4749471259941781
-58696775,0.47142943678683374
-57041468,0.4714160019458127
-29156345,0.4713756974227495
-54697379,0.4713488277407074
-60013509,0.4713488277407074
-17245035,0.4668462751209135
-50297176,0.46562586535826234
-54873983,0.4627999305172413
-29370770,0.459920256312136
-48123619,0.459920256312136
-20278996,0.4524874305172413
-51025021,0.4524471259941781
-45212537,0.4500814744043886
-52425332,0.4499471259941781
-52455883,0.4499471259941781
-52563359,0.44993369115315707
-42741147,0.44943369115315707
-57015170,0.42890591337537926
-26230887,0.42793369115315705
-46971307,0.42793369115315705
-57685558,0.4266980340899138
-36297584,0.42660035781982375
-22662996,0.4252561273376622
-20702716,0.42000086535826237
-41865577,0.4199739956762202
-44568806,0.4199471259941781
-39250242,0.41992025631213603
-47906209,0.41992025631213603
-49756995,0.41992025631213603
-50480244,0.41318692297880266
-47842009,0.4056748465494849
-55160906,0.40444712599417804
-60180275,0.4016614117084638
-56497509,0.4014971793890591
-24760910,0.40000086535826235
-43552785,0.40000086535826235
-54049458,0.3999336911531571
-54601443,0.39988057377245345
-54088992,0.39222794861982835
-49438025,0.3856614117084638
-56876195,0.3856614117084638
-16467844,0.3856479768674428
-43794802,0.3856345420264217
-43948049,0.38208998313703524
-48359259,0.3749336911531571
-54591008,0.374906821471115
-14008075,0.3721272275018658
-55206146,0.36664066234288684
-58678560,0.3658433332352129
-50727548,0.35477739916927886
-58276538,0.3545463199037169
+id,questions,score
+48641350,How to merge two lists into a list of multiple lists?,0.7999605608351992
+46362972,Merge list of lists in python 3,0.785947125994178
+1158128,Merge sorted lists in python,0.750188953132557
+44476206,how to merge two list having dict,0.7499202563121361
+58971955,How to merge two dataframe?,0.709933691153157
+35526224,How to merge these two Jsons?,0.701170256312136
+49734759,Merge two list into a list of dictionaries with multiple keys in python,0.6749874305172413
+34761978,Merge 3 lists into 1 list,0.6600680395633676
+30620323,Merge two files in Python PANDAS?,0.6600411698813256
+55397854,How to merge two IO Streams in Python?,0.659947125994178
+48744137,Merge lists while showing zeros in python,0.659920256312136
+58967559,how to merge two dimensional list with the same len,0.659920256312136
+44155727,Merge two lists of intervals with priority for one list,0.6551996213915011
+57508214,How to merge elements from multiple lists with same ID in Python?,0.6211971259941781
+36683756,Merge sort a list of words,0.6199605608351991
+57354626,How to merge with two objects into a tuple with the two elements?,0.6129559705978503
+58220001,How to merge dataframe with semicolon in python?,0.6076420244864904
+48926974,Merge list of tuples to a dictionary,0.5999471259941781
+52502495,How do you merge two unequal input/list in Python3,0.5999471259941781
+57531604,Merge two columns in Pandas,0.5999336911531571
+52855568,How to merge two lists of different lengths as a Pandas dataframe?,0.5688979768674427
+47667379,how to merge two html files through tornado,0.565545256312136
+58802412,how to merge two dictionaries with different keys that are inside same list?,0.5620899831370352
+58259762,How do you merge a two dimensional and a three dimensional list together?,0.5571302876600983
+47714900,How to merge two different pandas data frame in python,0.5570765482960142
+59513995,Merge two sorted linked lists - Python implementation - wrong/incomplete output,0.5479739956762202
+52480347,Merge dataframes Python without duplications,0.5435722939296909
+52879192,Merge multiple JSON files (more than two),0.539933691153157
+60242599,Merge dataframes within an ordered list,0.539920256312136
+42265239,Merge two list as values inside dictionary based on key,0.5250143001992833
+55770240,How to merge two raw query in Django 2?,0.5199336911531571
+46625843,merge strips timestamp,0.5117518729713388
+38978214,Merge a list of dataframes to create one dataframe,0.5082372439222271
+38745759,How to merge/join two resultset/table in django?,0.5079336911531571
+45532699,Merge two data frames in Python on column with non-unique values,0.5066540971839079
+59522083,How to merge Python and Kivy to work as one project,0.5015035896454694
+48832687,Merge two values into one cell in dataframe,0.5000143001992834
+44484520,merge two dataframes without repeats pandas,0.4999739956762202
+60115110,Merge multiple CSV rows into 1 in Python,0.4999336911531571
+44109813,Merge two lists and write to a text file in CONLL data format,0.499920256312136
+59223852,Merge And overwrite common columns in two DataFrames,0.499920256312136
+35785109,How to merge two pandas dataframe in parallel (multithreading or multiprocessing),0.4929954167838481
+56088692,How to merge values of dictionaries with same key into one from a list of dictionaries?,0.4913622625817285
+22306340,"merge values of same key in a list of dictionaries , and compare to another list of dictionaries in python3",0.48592025631213603
+60330020,Merge two Pandas data frames on overlapping segments,0.48319387924093127
+52426495,How to merge DataFrame with Multi-Index,0.47992025631213603
+60025252,Merge only if two consecutives lines startwith at python and write the rest of text normally,0.47992025631213603
+59863801,How do I merge two dataframes using a substring match in pandas?,0.4772416848835645
+43399506,Merge DataFrames with ordering criteria,0.4749471259941781
+58696775,How to merge two pandas DataFrames and keep repeated values?,0.47142943678683374
+57041468,Merge 2 lists containing obejcts with matching ids,0.4714160019458127
+29156345,How to merge multiple CSV files using Python Pandas,0.4713756974227495
+54697379,How to merge two numpy array's cells containing strings?,0.4713488277407074
+60013509,"How to merge two pandas DataFrames, but without shared elements",0.4713488277407074
+17245035,How can I merge together sentence objects?,0.4668462751209135
+50297176,Merge large images on disk,0.46562586535826234
+54873983,merge consecutive matching rows,0.4627999305172413
+29370770,How to merge .csv files to do a matrix,0.459920256312136
+48123619,Merge two CreateView to show there forms in DetailView of post model,0.459920256312136
+20278996,Merge 2 dictionaries in Python without deleting first dictionary,0.4524874305172413
+51025021,Merge several dataframes together,0.4524471259941781
+45212537,Merge csv files using python without repeating header,0.4500814744043886
+52425332,Merge pandas groupBy objects,0.4499471259941781
+52455883,Merge changes Pandas types,0.4499471259941781
+52563359,merge columns with same header name,0.44993369115315707
+42741147,How can I merge the values from two pandas dataframe which as same row and column indexes/value?,0.44943369115315707
+57015170,How to merge and split again thousands of text files?,0.42890591337537926
+26230887,how to merge data present in text files without changing the format using python?,0.42793369115315705
+46971307,How to merge two pandas dataframe with left join when both dataframe contains duplicate keys?,0.42793369115315705
+57685558,Merge dataframe rows when values are NaN,0.4266980340899138
+36297584,How to merge multiple rows into single cell in csv separated by comma using Python,0.42660035781982375
+22662996,Merge numpy arrays returned from loop,0.4252561273376622
+20702716,Merge/Join/Append two Pandas DataFrames with MultiIndex columns by both index and cols,0.42000086535826237
+41865577,Merge rows based on range of variable,0.4199739956762202
+44568806,merge dataframes by date after persision reduced,0.4199471259941781
+39250242,How to merge and delete nodes in networkx graph?,0.41992025631213603
+47906209,Merge two plots into one with logarithmic scale - different data frames pandas,0.41992025631213603
+49756995,Merge array of Matrixs into one Matrix,0.41992025631213603
+50480244,Merge rows with columns in different format pandas,0.41318692297880266
+47842009,merge data from multiple data frames on multiple conditions,0.4056748465494849
+55160906,How to merge multidimensional dataframe and series of different length?,0.40444712599417804
+60180275,Merge specific column in multiple dataframe with different length,0.4016614117084638
+56497509,Merge regression results back to original dataframe,0.4014971793890591
+24760910,How merge text in a tkinter label with different colors,0.40000086535826235
+43552785,Merge table on either of the 2 columns in pandas,0.40000086535826235
+54049458,Merge multiple dataframes by multiple id columns in Pandas,0.3999336911531571
+54601443,How do I merge data working with different excel files in Matplotlib?,0.39988057377245345
+54088992,"How can I merge 2 dataframes based on a list of tuples, where every tuple holds the relevant key from every dataframe?",0.39222794861982835
+49438025,Merge rows of pandas data frame by grouping a column,0.3856614117084638
+56876195,How to merge columns and duplicate row values to match in pandas,0.3856614117084638
+16467844,How to merge PDFs with only PHP and keep internal and external links,0.3856479768674428
+43794802,how to Merge remote-tracking branch 'caffe/master' into HEAD ?,0.3856345420264217
+43948049,Merge multiple csv files with same name in 10 different subdirectory,0.38208998313703524
+48359259,How to merge pandas dataframe and filter duplicate content in different column?,0.3749336911531571
+54591008,Merge tables with SQL-like join with filter (Between) in left join,0.374906821471115
+14008075,How to merge many to many relations from one db session to another with SQLAlchemy?,0.3721272275018658
+55206146,Merge Pandas Dataframe with non-unique index with 1D Numpy array,0.36664066234288684
+58678560,How to merge similar data into a custom field using serializers in django-rest-framework?,0.3658433332352129
+50727548,How to merge multiple dataframes with the same number of columns into one dataframe that shows all of the column headers per individual frame? -Pandas,0.35477739916927886
+58276538,How to merge/join empty dataframe with another filled dataframe by equal indices and column names?,0.3545463199037169
