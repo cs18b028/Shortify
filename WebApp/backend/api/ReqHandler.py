@@ -1,36 +1,35 @@
 from flask_restful import Api, Resource, reqparse
 
 class ReqHandler(Resource):
-    def get(self):
-        return {
-            'resultStatus' : 'SUCCESS',
-            'message' : 'Eureka!!!'
-        }
-    def post(self):
-        print(self)
-        parser = reqparse.RequestParser()
-        parser.add_argument('type', type=str)
-        parser.add_argument('message', type=str)
+  def get(self):
+    return {
+      'resultStatus': 'SUCCESS',
+      'message': "Eureka"
+    }
 
-        args = parser.parse_args()
+  def post(self):
+    print(self)
+    parser = reqparse.RequestParser()
+    parser.add_argument('type', type=str)
+    parser.add_argument('message', type=str)
 
-        print(args)
-        # note, the post req from frontend needs to match the strings here (e.g. 'type and 'message')
+    args = parser.parse_args()
 
-        request_type = args['type']
-        request_json = args['message']
-        # ret_status, ret_msg = ReturnData(request_type, request_json)
-        # currently just returning the req straight
-        ret_status = request_type
-        ret_msg = request_json
+    print(args)
+    # note, the post req from frontend needs to match the strings here (e.g. 'type and 'message')
 
-        if ret_msg:
-            message = "Your Message Requested: {}".format(ret_msg)
-        else:
-            message = "No Msg"
+    request_type = args['type']
+    request_json = args['message']
+    # ret_status, ret_msg = ReturnData(request_type, request_json)
+    # currently just returning the req straight
+    ret_status = request_type
+    ret_msg = request_json
 
-        final_ret = {"status": "Success", "message": message}
+    if ret_msg:
+      message = "Message Recieved: {}".format(ret_msg)
+    else:
+      message = "No Msg"
+    
+    final_ret = {"status": "Success", "message": message}
 
-        return final_ret
-
-        
+    return final_ret
