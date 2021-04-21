@@ -1,0 +1,439 @@
+answer,link,code,sc
+"This is perfect case for DataFrame.update, which aligns on indicesOutputNote that update is in place, as quoted from the documentation:Modify in place using non-NA values from another DataFrame.That means that your original dataframe will be updated by the new values. To prevent this, use:",https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.update.html,"DataFrame.update
+Empty_DF.update(ROI_DF)
+
+print(df3)
+
+     a    b  c
+a  0.0  5.0  0
+b  1.0  6.0  0
+c  2.0  7.0  0
+d  0.0  0.0  0
+e  3.0  8.0  0
+f  0.0  0.0  0
+
+update
+df3 = Empty_DF.copy()
+df3.update(ROI_DF)
+",
+you can just assign an array as a column:,,"a = ['g', 'h', 'y']
+df['array']=a
+print(df)
+
+   index col1 col2 array
+0      1    a    b     g
+1      1    r    t     h
+2      2    e    e     y
+",
+"There are many ways to do this, staying in Pandas I did the following.With the file structureThis code will work, it's a little verbose for explanation but you can shorten with implementation.",,"root/  
+├── dir1/  
+│   ├── data_20170101_k   
+│   ├── data_20170102_k    
+│   ├── ...  
+├── dir2/    
+│   ├── data_20170101_k    
+│   └── data_20170101_k  
+│   └── ...   
+└── ... 
+
+import glob
+import pandas as pd
+
+CONCAT_DIR = ""/FILES_CONCAT/""
+
+# Use glob module to return all csv files under root directory. Create DF from this.
+files = pd.DataFrame([file for file in glob.glob(""root/*/*"")], columns=[""fullpath""])
+
+#    fullpath
+# 0  root\dir1\data_20170101_k.csv
+# 1  root\dir1\data_20170102_k.csv
+# 2  root\dir2\data_20170101_k.csv
+# 3  root\dir2\data_20170102_k.csv
+
+# Split the full path into directory and filename
+files_split = files['fullpath'].str.rsplit(""\\"", 1, expand=True).rename(columns={0: 'path', 1:'filename'})
+
+#    path       filename
+# 0  root\dir1  data_20170101_k.csv
+# 1  root\dir1  data_20170102_k.csv
+# 2  root\dir2  data_20170101_k.csv
+# 3  root\dir2  data_20170102_k.csv
+
+# Join these into one DataFrame
+files = files.join(files_split)
+
+#    fullpath                       path        filename
+# 0  root\dir1\data_20170101_k.csv  root\dir1   data_20170101_k.csv
+# 1  root\dir1\data_20170102_k.csv  root\dir1   data_20170102_k.csv
+# 2  root\dir2\data_20170101_k.csv  root\dir2   data_20170101_k.csv
+# 3  root\dir2\data_20170102_k.csv  root\dir2   data_20170102_k.csv
+
+# Iterate over unique filenames; read CSVs, concat DFs, save file
+for f in files['filename'].unique():
+    paths = files[files['filename'] == f]['fullpath'] # Get list of fullpaths from unique filenames
+    dfs = [pd.read_csv(path, header=None) for path in paths] # Get list of dataframes from CSV file paths
+    concat_df = pd.concat(dfs) # Concat dataframes into one
+    concat_df.to_csv(CONCAT_DIR + f) # Save dataframe
+",
+"I am not sure how your data is structured however, it seems you want certain attributes form excel2 in excel1.. This will merge on the column specified.",,"excel1.merge(excel2, left_on='No.')
+",
+"temp (temperature) dataframe:humid dataframe:Now the temp dataframe looks like:Do the same for humid df:Now humid is:Reindex temp, replace the dates as you like:And now left join:Make sure this actually worked:Hooray!",,"                 datetime  temperature
+0  2017-06-13 22:20:11.309         82.4
+1  2017-06-13 22:19:54.004         82.4
+2  2017-06-13 22:19:36.661         82.4
+3  2017-06-13 22:19:19.359         82.4
+
+                 datetime  humidity
+0  2017-06-13 22:07:30.723      63.0
+1  2017-06-13 22:07:13.448      63.0
+2  2017-06-13 22:06:56.115      63.0
+3  2017-06-13 22:06:38.806      63.0
+
+
+
+temp.datetime = pd.to_datetime(temp.datetime) #convert to datetime dtype
+temp.set_index('datetime', inplace=True) #make it the index
+temp.index = temp.index.round('S') #and now round to the second
+
+                     temperature
+datetime                        
+2017-06-13 22:20:11         82.4
+2017-06-13 22:19:54         82.4
+2017-06-13 22:19:37         82.4
+2017-06-13 22:19:19         82.4
+
+humid.datetime = pd.to_datetime(humid.datetime) 
+humi.set_index('datetime', inplace=True) 
+humid.index = humid.index.round('S') 
+
+                     humidity
+datetime                     
+2017-06-13 22:07:31      63.0
+2017-06-13 22:07:13      63.0
+2017-06-13 22:06:56      63.0
+2017-06-13 22:06:39      63.0
+
+temp = temp.reindex(pd.DatetimeIndex(start='2017-06-13 22:00', end='2017-06-13 22:20', freq='S'))
+temp.head()
+
+                     temperature
+2017-06-13 22:00:00          NaN
+2017-06-13 22:00:01          NaN
+2017-06-13 22:00:02          NaN
+2017-06-13 22:00:03          NaN
+2017-06-13 22:00:04          NaN
+
+out = pd.merge(temp, humid, left_index=True, right_index=True, how='left')
+
+out.head():
+                     temperature  humidity
+2017-06-13 22:00:00          NaN       NaN
+2017-06-13 22:00:01          NaN       NaN
+2017-06-13 22:00:02          NaN       NaN
+2017-06-13 22:00:03          NaN       NaN
+2017-06-13 22:00:04          NaN       NaN
+
+out.loc['2017-06-13 22:07:31']
+                     temperature  humidity
+2017-06-13 22:07:31          NaN      63.0
+",
+"You probably meanA more concise approach (see wims answer) is to use a list comprehension, ",http://docs.python.org/2/tutorial/datastructures.html#list-comprehensions,"allArrays = np.array([])
+for x in range(0, 1000):
+    myArray = myFunction(x)
+    allArrays = np.concatenate([allArrays, myArray])
+
+allArrays = np.concatenate([myFunction(x) for x in range]) 
+",
+"this assumes dict1 and dict2 has the same keyssomething like that should work, i didn't run the code so it might be wrong but the idea should be correct.",,"res = {}
+for i in dict1.keys()
+    res[i] = dict1[i] + dict2[i]
+",
+"Ok, here's some working code. Is this roughly what you need?
+I'm not too happy with it yet, it looks a bit ugly imho but I want to know if it's the right direction.Output:",,"words = '''Some sentence that is spliced...
+and has a continuation.
+this cannot be confused by U.S.A.
+In that
+last sentence... 
+an abbreviation ended the sentence!'''.split()
+
+def format_sentence(words):
+    output = []
+
+    for word in words:
+        if word.endswith('...') or not word.endswith('.'):
+            output.append(word)
+            output.append(' ')
+        elif word.endswith('.'):
+            output.append(word)
+            output.append('\n')
+        else:
+            raise ValueError('Unexpected result from word: %r' % word)
+
+    return ''.join(output)
+
+print format_sentence(words)
+
+Some sentence that is spliced... and has a continuation.
+this cannot be confused by U.S.A.
+In that last sentence...  an abbreviation ended the sentence!
+",
+"you can use groupby to get all the matching dicts, then unify them using ChainMap, like this:Output:",https://docs.python.org/3/library/itertools.html#itertools.groupby https://docs.python.org/3/library/collections.html#collections.ChainMap,"groupby
+ChainMap
+from itertools import groupby
+from operator import itemgetter
+from collections import ChainMap
+
+list1 = [{'name': 'Nick', 'id': '123456'}, {'name': 'Donald', 'id': '999'}]
+list2 = [{'address': 'London', 'id': '123456'}, {'address': 'NYC', 'id': '999'}]
+
+grouped_subdicts = groupby(sorted(list1 + list2, key=itemgetter(""id"")), itemgetter(""id""))
+
+result = [dict(ChainMap(*g)) for k, g in grouped_subdicts]
+
+print(result)
+
+[{'id': '123456', 'address': 'London', 'name': 'Nick'},
+{'id': '999', 'address': 'NYC', 'name': 'Donald'}]
+",
+"Is there a reason you're avoiding creating some objects to manage this? If it were me, I'd go objects and do something like the following (this is completely untested, there may be typos):Now I can right code that looks like:This is just a starting point. Now you can you add methods that group (and sum) the expenditures list by decoration (e.g. ""I spent HOW MUCH on Twinkies last month???""). You can add a method that parses entries from a file, or emits them to a csv list. You can do some charting based on time.",,"#!/usr/bin/env python3
+
+from datetime import datetime # why python guys, do you make me write code like this??
+from operator import itemgetter
+
+class BudgetCategory(object):
+    def __init__(self, name, allowance):
+        super().__init__()
+            self.name = name # string naming this category, e.g. 'Food'
+            self.allowance = allowance # e.g. 400.00 this month for Food
+            self.expenditures = [] # initially empty list of expenditures you've made
+
+    def spend(self, amount, when=None, description=None):
+        ''' Use this to add expenditures to your budget category'''
+        timeOfExpenditure = datetime.utcnow() if when is None else when #optional argument for time of expenditure
+        record = (amount, timeOfExpenditure, '' if description is None else description) # a named tuple would be better here...
+        self.expenditures.append(record) # add to list of expenditures
+        self.expenditures.sort(key=itemgetter(1)) # keep them sorted by date for the fun of it
+
+    # Very tempting to the turn both of the following into @property decorated functions, but let's swallow only so much today, huh?
+    def totalSpent(self):
+        return sum(t[0] for t in self.expenditures)
+
+    def balance(self):
+        return self.allowance - self.totalSpent()
+
+budget = BudgetCategory(name='Food', allowance=200)
+budget.spend(5)
+budget.spend(8)
+
+print('total spent:', budget.totalSpent())
+print('left to go:', budget.balance())
+",
+"Why don't you try to use append, even though it is not the most elegant way ?For write files use open()
+For example, ",,"    A =
+
+    [('This', 'DT'),
+     ('shoe', 'NN'),
+     ('is', 'BEZ'),
+     ('of', 'IN'),
+     ('Blue', 'JJ-TL'),
+     ('color', 'NN'),
+     ('.', '.')]
+
+    B =
+    [('This', 'Other'),
+     ('shoe', 'Product'),
+     ('is', 'Other'),
+     ('of', 'Other'),
+     ('Blue', 'Color'),
+     ('color', 'Other'),
+     ('.', 'Other')]
+
+    Title = 
+    [('This', ),
+     ('shoe', ),
+     ('is', ),
+     ('of', ),
+     ('Blue', ),
+     ('color', ),
+     ('.', )]
+
+    for j, item in enumerate(A):
+        Title[j].append(item)
+        Title[j].append(B[j][1])
+
+    for tuple in Title:
+        line = '{0[0]} {0[1]} {0[2]}'.format(tuple)
+
+    f = open('This/is/your/destination/file.txt', 'w')
+    # Here you do something
+
+    f.write( )
+    f.close()
+",
+"When you create a variable in a method, it is a local variable by default, and is not accessible outside that method. Your lines:andcreate local variables named metropolitalne_text. I suspect you really want metropolitalne_text to be a property of MainScreen. You can do this by adding a line to your definition of the MainScreen class:Then, everywhare that you reference metropolitalne_text in the MainScreen class, change it to self.metropolitalne_text.",,"metropolitalne_text=StringProperty('Bilety metropolitalne')
+
+metropolitalne_text=StringProperty('Metropolitan tickets')
+
+metropolitalne_text
+metropolitalne_text
+MainScreen
+MainScreen
+class MainScreen (Screen):
+    metropolitalne_text = StringProperty()
+
+    def __init__(self,**kwargs):
+        super().__init__()
+
+        self.button_polish = Button(on_press=self.change_language_to_polish)
+        self.button_english = Button(on_press=self.change_language_to_english)
+
+metropolitalne_text
+MainScreen
+self.metropolitalne_text",
+"You're using the json module to convert the JSON file into Python objects, but you're not using the module to convert those Python objects back into JSON. Instead of this at the endtry this:(Note that this is also wrapping the all_items array in a dictionary so that you get the output you expect, otherwise the output will be a JSON array, not an object with an ""items"" key).",,"json
+textfile_merged.write(str(all_items))
+
+json.dump({ ""items"": all_items }, textfile_merged)
+
+all_items
+""items""",
+"You can use pd.concat to literally join by the index of the dataframe.  This means both of your dataframes have to be preordered and you simply ""pasting"" one dataframe next to the other.Output:",,"pd.concat
+pd.concat([df1, df2[['Issue']], axis=1)
+
+  IDs  Value1  Value2 Issue
+0  AB       1       3    AA
+1  AB       1       1   AAA
+2  AB       2       4    BA
+3  BC       2       2    CC
+4  BC       5       0    CA
+5  BG       1       1     A
+6  RF       2       2     D
+",
+"In the above mentioned code there is a discrepancy in the logic.
+For instance:It should be Same for the second end of the list condition. That is the reason the ending value 4 is being erased. Hope this helps.",,"if(current1.val <= current.val2):
+    if(current1.next is None):
+        #this is wrong as you are skipping the present current1 val 
+        prev1.next =current2
+
+if(current1.val <= current.val2):
+    if(current1.next is None):
+        prev1.next = current1
+        prev1 = prev1.next
+        prev1.next =current2
+
+4",
+"Given there are so many types, a lot of type checking is required, but this simple recursion should work.Also, this assumes the keys in a and b are the same, as they are in the example.",,"a
+b
+def merge(a,b,new_dict):
+    for key in a.keys():
+        if type(a[key]) != type(b[key]):
+            new_dict[key] = (a[key],b[key])
+        elif type(a[key]) == dict:
+            new_dict[key] = merge(a[key],b[key],{})
+        elif type(a[key]) == set:
+            new_dict[key] = a[key]|b[key]
+        else:
+            new_dict[key] = a[key] + b[key]
+    return new_dict
+
+c = merge(a,b,{})
+",
+As you identified the problem is that merge_sort has no way of knowing the basis of sorting. You could change merge_sort to take in an additional parameter that returns the key for each element in the sequence just like sorted does:Then change the comparison to call passed function instead of comparing elements directly:And finally pass key to recursive calls:With these changes it will work as you expect:One thing to note though is that results are not identical with sorted since merge_sort is not stable:,https://docs.python.org/3/library/functions.html#sorted https://en.wikipedia.org/wiki/Sorting_algorithm#Stability,"merge_sort
+merge_sort
+sorted
+def merge_sort(seq, key=lambda x: x):
+
+if key(left[left_counter]) < key(right[right_counter]):
+    seq[master_counter] = left[left_counter]
+    left_counter += 1
+else:
+    seq[master_counter] = right[right_counter]
+    right_counter += 1
+
+left  = merge_sort( seq[:mid_index], key )
+right = merge_sort( seq[mid_index:], key )
+
+merge_sort([4, 6, 2, 1]) # [1, 2, 4, 6]
+merge_sort(['foo', 'a', 'bar', 'foobar'], key=len) # ['a', 'bar', 'foo', 'foobar']
+
+sorted
+merge_sort
+merge_sort(['foo', 'a', 'bar', 'foobar'], key=len) # ['a', 'bar', 'foo', 'foobar']
+sorted(['foo', 'a', 'bar', 'foobar'], key=len) # ['a', 'foo', 'bar', 'foobar']
+",
+You can do it like this:Since you are adding the list the merged list will contains all values from abc but not in the correct order.That's why I used .sort() to sort the list,,"a = [0, 3, 6, 9]
+b = [1, 4, 7, 10]
+c = [2, 5, 8, 11]
+merged=a+b+c
+merged.sort()
+",
+"One line solution using sorted:IMO this solution is very readable.Using heapq module, it could be more efficient, but I have not tested it. You cannot specify cmp/key function in heapq, so you have to implement Obj to be implicitly sorted.",,"def magic(*args):
+  return sorted(sum(args,[]), key: lambda x: x.points)
+
+import heapq
+def magic(*args):
+  h = []
+  for a in args:
+    heapq.heappush(h,a)
+  return [i for i in heapq.heappop(h)
+",
+"Here you go: a fully functioning merge sort for lists (adapted from my sort here):Call it like this:For good measure, I'll throw in a couple of changes to your Obj class:",http://github.com/hughdbrown/algorithm/blob/05307be15669de0541cd4e91c03b610d440b4290/mergesort.py,"def merge(*args):
+    import copy
+    def merge_lists(left, right):
+        result = []
+        while left and right:
+            which_list = (left if left[0] <= right[0] else right)
+            result.append(which_list.pop(0))
+        return result + left + right
+    lists = list(args)
+    while len(lists) > 1:
+        left, right = copy.copy(lists.pop(0)), copy.copy(lists.pop(0))
+        result = merge_lists(left, right)
+        lists.append(result)
+    return lists.pop(0)
+
+merged_list = merge(a, b, c)
+for item in merged_list:
+    print item
+
+class Obj(object):
+    def __init__(self, p) :
+        self.points = p
+    def __cmp__(self, b) :
+        return cmp(self.points, b.points)
+    def __str__(self):
+        return ""%d"" % self.points
+
+self
+__init__()
+__cmp__
+str()
+Obj",
+I like Roberto Liffredo's answer. I didn't know about heapq.merge(). Hmmmph.Here's what the complete solution looks like using Roberto's lead:Or:,,"class Obj(object):
+    def __init__(self, p) :
+        self.points = p
+    def __cmp__(self, b) :
+        return cmp(self.points, b.points)
+    def __str__(self):
+        return ""%d"" % self.points
+
+a = [Obj(1), Obj(3), Obj(8)]
+b = [Obj(1), Obj(2), Obj(3)]
+c = [Obj(100), Obj(300), Obj(800)]
+
+import heapq
+
+sorted = [item for item in heapq.merge(a,b,c)]
+for item in sorted:
+    print item
+
+for item in heapq.merge(a,b,c):
+    print item
+",
+"Or you can use use append, but you need to create new copy of the lst1:",,"lst3 = []
+for elem in lst2:
+    theNew = lst1[:]
+    theNew.append(new2)
+    lst3.append(theNew)
+print(lst3)
+",

@@ -1,0 +1,60 @@
+answer,link,code,sc
+"This can be achieved in much simple way in shell as:(Note: Don't use .csv in extension as it will cause inconsistency with find. After this command is finished, file can be renamed as .csv",,"find . -name ""*.csv"" | xargs cat > mergedCSV
+",
+"That's the editor that is opened so that you can write the commit message. That means the merge went well, no conflicts. Just set the comment, save the file and quit and the merge revision should be done.",,,
+"The Python module, PyPDF2 looks like it would work for you. http://knowah.github.io/PyPDF2/",http://knowah.github.io/PyPDF2/,,
+I would try to create a temporary key to join on:Output:,,"#unzip list_of_couples into index for table_a and table_b
+a, b  = zip(*list_of_couples)
+
+#Loop on length of index to assign same value of key to each table for the appropriate index
+for i in range(len(a)):
+    df_a.loc[a[i], 'key'] = i
+    df_b.loc[b[i], 'key'] = i
+
+#merge dataframes on 'key', remove NaN records and drop temporary 'key' column
+df_a.merge(df_b, on='key').dropna(subset=['key']).drop('key', axis=1)
+
+   col_a  col_b  col_c  col_d
+0      1      2      9      8
+5      1      1      3      3
+",
+"I believe the solution to your problem would be to use the pd.join(). After the join fill the master dataframe by looping through the joined dataframe and using the index to assing to each row:I don't have the output because I didn't build a master dataframe, but it should work",,"df_joined = ugt.join(ugh, how='outer')
+
+                      temperature    humidity                     
+2017-06-13 22:06:03          82.0    63.0
+2017-06-13 22:06:20          82.4    NaN
+2017-06-13 22:06:21           NaN    63.0
+2017-06-13 22:06:37          82.4    NaN
+2017-06-13 22:06:38           NaN    63.0
+2017-06-13 22:06:57          82.4    63.0
+
+for index, row in df_joined.iterrows():
+    df_master.loc[index,'humidity'] = row['humidity']
+    df_master.loc[index,'temperature'] = row['temperature']
+",
+"Get all the keys using a set union d1.keys() | d2.keys(), then it's a dict comprehension:Note: If you get TypeError then you're using an older version of Python.  You can just change .keys() to .viewkeys() to make it work in that case.  ",,"d1.keys() | d2.keys()
+>>> {k: d1.get(k, []) + d2.get(k, []) for k in (d1.keys() | d2.keys())}
+{'1': [12, 32, 44, 12, 34, 15, 11, 44, 42, 14],
+ '2': [21, 34, 11, 65, 11, 24, 41, 65],
+ '3': [44, 12, 98, 41, 22, 48],
+ '4': [65, 71]}
+
+TypeError
+.keys()
+.viewkeys()",
+The presence of a cursos indicates you're using pyodbc. data contains pyodbc.Row objects and hence the pd.DataFrame constructor fails to split the data.Try this,,"pyodbc
+data
+pyodbc.Row
+pd.DataFrame
+df = pandas.DataFrame([tuple(t) for t in cursor.fetchall()], columns=columns)
+",
+This is just elaborating on Arihant's answer :If you want to save it as a variable:,,"Enter3 = Enter1 + Enter2
+for all in Enter3:
+    print(all)
+
+output = []
+for all in Enter3:
+   output.append(all)
+string_output = "" "".join(output)
+print(string_output)
+",

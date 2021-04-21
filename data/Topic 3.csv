@@ -1,0 +1,698 @@
+answer,link,code,sc
+"This is perfect case for DataFrame.update, which aligns on indicesOutputNote that update is in place, as quoted from the documentation:Modify in place using non-NA values from another DataFrame.That means that your original dataframe will be updated by the new values. To prevent this, use:",https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.update.html,"DataFrame.update
+Empty_DF.update(ROI_DF)
+
+print(df3)
+
+     a    b  c
+a  0.0  5.0  0
+b  1.0  6.0  0
+c  2.0  7.0  0
+d  0.0  0.0  0
+e  3.0  8.0  0
+f  0.0  0.0  0
+
+update
+df3 = Empty_DF.copy()
+df3.update(ROI_DF)
+",
+sql equivalent with where:that would translate to python as:,,"SELECT t1.company,
+        t1.resource,
+        t2.company,
+        t2.resource,
+        t1.ClockInDate,
+        t2.EffectiveFrom,
+        t2.EffectiveTo
+FROM table1 t1
+LEFT JOIN table2 t2 ON t1.resource = t2.resource
+                    AND t1.company = t2.company
+WHERE t1.ClockInDate IS NULL --no ClockInDate to check
+    OR t2.company IS NULL AND t2.resource IS NULL --not rows in t2 for t1
+    OR t1.ClockInDate BETWEEN t2.EffectiveFrom AND t2.EffectiveTo --ClockInDate exists, rows in t2 exist, we can now check ClockInDate to be between t2.EffectiveFrom AND t2.EffectiveTo
+
+df_merge = pd.merge(df1, df2, on=['Company', 'Resource'], how='left')
+df_final = df_merge[df_merge.ClockInDate.isnull() | df_merge.ClockInDate.between(df_merge.EffectiveFrom, df_merge.EffectiveTo) | df_merge.EffectiveFrom.isnull()]
+",
+"This can be achieved in much simple way in shell as:(Note: Don't use .csv in extension as it will cause inconsistency with find. After this command is finished, file can be renamed as .csv",,"find . -name ""*.csv"" | xargs cat > mergedCSV
+",
+If you're looking to get two colours on the same line you can use several labels and use .grid() to get them on the same line.If you know you wanted two words and two colours for example you can use something like this:Or if you wanted to have a different colours for each word in a string for example:,,".grid()
+root = Tk()
+Label(root,text=""red text"",fg=""red"").grid(column=0,row=0)
+Label(root,text=""green text"",fg=""green"").grid(column=0,row=1)
+mainloop()
+
+words = [""word1"",""word2"",""word3"",""word4""]
+colours = [""blue"",""green"",""red"",""yellow""]
+
+for index,word in enumerate(words):
+    Label(window,text = word,fg=colours[index]).grid(column=index,row=0)
+",
+One more approachOutput,,"df1.join(df2['date'],rsuffix='df2',how='outer').join(df3['date'],rsuffix='df3',how='outer')
+
+  Color     date        datedf2     datedf3
+0   A       2011.0      2013.0      2011
+1   B       201411.0    20151111.0  201411
+2   C       20151231.0  201101.0    20151231
+3   A       2019.0      NaN         2019
+4   NaN     NaN         NaN         20070212
+",
+"You can use DataFrame.join with rename and parameter on, then DataFrame.set_index with DataFrame.reorder_levels:Or use Index.map:",http://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.join.html http://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.set_index.html http://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.reorder_levels.html http://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Index.map.html,"DataFrame.join
+rename
+on
+DataFrame.set_index
+DataFrame.reorder_levels
+result = (df.join(s1.rename('cnts'), on='Pet')
+           .set_index('cnts', append=True)
+           .reorder_levels([0,2,1]))
+print (result)
+                      Favloc
+Pet     cnts Name           
+Cat     3    Kitty     couch
+             Harry   windows
+             Bear        bed
+             Sam      basket
+Dog     3    Max       floor
+             Hunter   carper
+Hamster 1    Fluffy  Haybale
+
+Index.map
+idx = df.index.get_level_values('Pet').map(s1.rename('cnts').get)
+result = df.set_index(idx, append=True).reorder_levels([0,2,1])
+print (result)
+                      Favloc
+Pet     cnts Name           
+Cat     3    Kitty     couch
+             Harry   windows
+             Bear        bed
+             Sam      basket
+Dog     3    Max       floor
+             Hunter   carper
+Hamster 1    Fluffy  Haybale
+",
+"You're using the csv module, but ignoring csv.reader.  It handles all the parsing for you:Input:Output in the .csv file:EDIT: I see now that you want the data in Excel to be in a single cell.  The above will put it in a row of four cells:The following will write a single cell:Output in the .csv file:Output in Excel:",https://i.stack.imgur.com/gVpaq.png https://i.stack.imgur.com/vi59a.png,"csv
+csv.reader
+#!python2
+import csv
+with open('book2.csv','rb') as inf, open('test.csv','wb') as outf:
+    r = csv.reader(inf)
+    w = csv.writer(outf)
+    L = [row for row in r] # Read all lines as list of lists.
+    L = zip(*L)            # transpose all the lines.
+    w.writerows(L)         # Write them all back out.
+
+222
+333
+444
+555
+
+222,333,444,555
+
+#!python2
+import csv
+with open('book2.csv') as inf, open('test.csv','wb') as outf:
+    w = csv.writer(outf)
+    data = inf.read().splitlines()
+    w.writerow([','.join(data)])
+
+""222,333,444,555""
+",
+This should do it assuming your columns are space separated and the empty elements are zero,,"with open('file1') as file1, open('file2') as file2,\
+        open('file3') as file3, open('output', 'w') as out_file:
+
+    lf1 = in_file1.readline()
+    lf2 = in_file2.readline()
+    lf3 = in_file3.readline()
+
+    line_f1 = lf1.strip() if lf1 else "" 0 ""
+    line_f2 = lf2.strip() if lf2 else "" 0 ""
+    line_f3 = lf3.strip() if lf3 else "" 0 ""
+
+    while (len(lf1)!=0 and len(lf2)!=0 and len(lf3)!=0):
+
+            print >> outfile line_f1, line_f2, line_f3
+
+            lf1 = in_file1.readline()
+            lf2 = in_file2.readline()
+            lf3 = in_file3.readline()
+
+            line_f1 = lf1.strip() if lf1 else "" 0 ""
+            line_f2 = lf2.strip() if lf2 else "" 0 ""
+            line_f3 = lf3.strip() if lf3 else "" 0 ""
+",
+Below code do what you need. I assume each element is separated by white space. This code works with irregular column length and there is no need to put 0 for empty elements in shorter columns. I tested it with simple examples.,,"def read_file(name):
+    rows = open(name, 'r').readlines()
+    data = []
+    for r in rows:
+        data.append(r.split())
+    return data
+
+def invert(data):
+    new_data = []
+    max_col = 0
+    for r in data:
+        if len(r) > max_col:
+            max_col = len(r)
+    col_no = max_col
+    for i in range(col_no):
+        cal = []
+        for j in range(len(data)):
+            if i in range(len(data[j])):
+                cal.append(data[j][i])
+            else:
+                cal.append('   ')
+        new_data.append(cal)
+    return new_data
+
+def merge(data_list):
+    big_data = []
+    for d in data_list:
+        for c in d:
+            big_data.append(c)
+    return big_data
+
+def write_result(result):
+    result_file = open('result', 'w')
+    for r in result:
+        for e in r:
+            result_file.write(e + ' ')
+        result_file.write('\n')
+
+
+data1 = read_file('file1')
+data2 = read_file('file2')
+data3 = read_file('file3')
+new_data1 = invert(data1)
+new_data2 = invert(data2)
+new_data3 = invert(data3)
+big_data = merge([new_data1, new_data2, new_data3])
+result = invert(big_data)
+write_result(result)
+",
+"First of all, I assumed you've not repeated your strings correctly (like ""hi, this is an example line."" != ""hi, this is edited line."") by mistake, not on purpose (that I can't figure out).I named the accumulative file common.doc to distinct from the other .txt files in the target directory. Also, this example code implies all the files are in the same directory.And after common.doc editing:And a solution for multiline text (merging stays with .strip() removed on content writing), not suitable for hundreds of thousands of files tho...",,"common.doc
+.txt
+# merging.py
+import os
+import glob
+
+with open(""common.doc"", ""w"") as common:
+    for txt in glob.glob(""./*.txt""):
+        with open(txt, ""r"") as f:
+            content = f.read()
+        common.write(""{} ({})\n"".format(os.path.basename(txt), content))
+
+common.doc
+# splitting.py
+with open(""common.doc"", ""r"") as common:
+    for line in common:
+        name = line[:line.find("" ("")]
+        text = line[line.find("" ("")+2:line.rfind("")"")]
+        with open(name, ""w"") as f:
+            f.write(text)
+
+.strip()
+# splitting2.py
+with open(""common.doc"", ""r"") as common:
+    everything = common.read()
+elements = everything.split("")"")
+for elem in elements:
+    name = elem[:elem.find("" ("")].strip()
+    text = elem[elem.find("" ("")+2:]
+    if name:
+        with open(name, ""w"") as f:
+            f.write(text)
+",
+"You could go ahead and do the concatenation inside your for loop. However, if you are set on doing the concatenation after the fact and want them separated by commas, then I assume you are okay with the data becoming strings instead of floats. If that is the case, and you know that the columns and indexes are identical and in the same order, you can do: ",,"df = hapX_count.astype(str) + ',' + hapY_count.astype(str)
+",
+"Using pandas:To get rid of duplicate rows as well:This will not get rid of duplicates as the dataframe is created, but after. So a dataframe gets created by concatenating all of the files. Then it is de-duplicated. The final dataframe can then be saved to csv.",,"import pandas as pd
+
+interesting_files = glob.glob(""/home/tcs/PYTHONMAP/test1/*.csv"") 
+df = pd.concat((pd.read_csv(f, header = 0) for f in interesting_files))
+df.to_csv(""output.csv"")
+
+import pandas as pd
+
+interesting_files = glob.glob(""/home/tcs/PYTHONMAP/test1/*.csv"") 
+df = pd.concat((pd.read_csv(f, header = 0) for f in interesting_files))
+df_deduplicated = df.drop_duplicates()
+df_deduplicated.to_csv(""output.csv"")
+",
+"With python's csv reader and writer,
+reading from the files a.csv and b.csv, writing to c.csv:Creates file c.csv:(I assume that those braces and extra linebreaks in your csv code are just here on stackoverflow and not really part of your csv files? I also assume that a.csv and b.csv have the same length in lines.)",,"a.csv
+b.csv
+c.csv
+# -*- coding: utf-8 -*-
+
+import csv
+
+with open('a.csv', 'r') as file_a:
+    with open('b.csv', 'r') as file_b:
+        with open('c.csv', 'w') as file_c:
+            reader_a = csv.reader(file_a, delimiter=',')
+            reader_b = csv.reader(file_b, delimiter=',')
+            writer_c = csv.writer(file_c)
+
+            for cols_a in reader_a:
+                cols_b = reader_b.next()
+                writer_c.writerow(cols_a + cols_b)
+
+c.csv
+a, b, c, d,o, p, q, r
+e, f, g, h,s, t, u, v
+i, j, k, l,w, x, y, z
+",
+"A little bit tricky , using shift create the groupkey , then agg ",,"shift
+agg
+df.fillna('NaN',inplace=True) # notice here NaN always no equal to NaN, so I replace it with string 'NaN'
+df.groupby((df.drop('Y',1)!=df.drop('Y',1).shift()).any(1).cumsum()).\
+     agg(lambda x : ','.join(x) if x.name=='Y' else x.iloc[0])
+Out[19]: 
+         Y   X1    X2    X3    X4    X5
+1    A,B,C  NaN -3810  TRUE  None  None
+2  D,E,F,G  NaN -3810  None  None  None
+3        H  NaN -3810  TRUE  None  None
+",
+Good to remember that itertools.groupby handles constructiveness for us.,,"itertools.groupby
+itertools.groupby
+from itertools import groupby
+
+Y = df.Y
+X = df.filter(like='X').T  # df.drop('Y', 1).T
+K = lambda x: (*X[x].fillna('NA'),)
+
+tups = [
+    (' '.join(Y.loc[V]), *X[V[0]])
+    for _, [*V] in groupby(Y.index, key=K)
+]
+
+pd.DataFrame(tups, columns=df.columns)
+
+         Y  X1    X2    X3    X4    X5
+0    A B C NaN -3810  TRUE  None  None
+1  D E F G NaN -3810  None  None  None
+2        H NaN -3810  TRUE  None  None
+3        I NaN  2540  TRUE  None  None
+4        J NaN  2540  None  True  None
+",
+"pyvips can do exactly what you want very quickly and efficiently. For example:The access=""sequential"" option tells pyvips that you want to stream the image. It will only load pixels on demand as it generates output, so you can merge enormous images using only a little memory. The arrayjoin operator joins an array of images into a grid across tiles across. It has quite a few layout options: you can specify borders, overlaps, background, centring behaviour and so on.I can run it like this:So it joined 100 JPG images to make a 14,000 x 20,000 pixel mosaic in about 2.5s on this laptop, and from watching top, needed about 300mb of memory. I've used it to join over 30,000 images into a single file, and it would go higher. I've made images of over 300,000 by 300,000 pixels.The pyvips equivalent of PIL's paste is insert. You could use that too, though it won't work so well for very large numbers of images. There's also a command-line interface, so you could just enter:To join up a large set of JPG images.",https://pypi.org/project/pyvips/ https://libvips.github.io/libvips/API/current/libvips-conversion.html#vips-arrayjoin https://libvips.github.io/libvips/API/current/libvips-conversion.html#vips-insert,"import sys
+import pyvips
+
+images = [pyvips.Image.new_from_file(filename, access=""sequential"")
+          for filename in sys.argv[2:]]
+final = pyvips.Image.arrayjoin(images, across=10)
+final.write_to_file(sys.argv[1])
+
+access=""sequential""
+arrayjoin
+across
+$ for i in {1..100}; do cp ~/pics/k2.jpg $i.jpg; done
+$ time ../arrayjoin.py x.tif *.jpg 
+
+real    0m2.498s
+user    0m3.579s
+sys 0m1.054s
+$ vipsheader x.tif
+x.tif: 14500x20480 uchar, 3 bands, srgb, tiffload
+
+top
+paste
+insert
+vips arrayjoin ""${echo *.jpg}"" x.tif --across 10
+",
+"here's the code I ended up using, and it works great... this is largely based off of WoLpH code, so thank you very much! ",,"    output = stream[:1]
+    for line in stream:
+            if output[-1].as_utf8.replace(' ', '').endswith('...'):       
+                output[-1] += line
+
+            elif not output[-1].as_utf8.replace(' ', '').endswith('.') and not output[-1].as_utf8.replace(' ', '').endswith('?') and not output[-1].as_utf8.replace(' ', '').endswith('!') and not output[-1].as_utf8.replace(' ', '').endswith('""') and not output[-1].as_utf8.replace(' ', '')[-1].isdigit():
+                if output[-1] != line:
+                    output[-1] += line
+
+            else:
+                if output[-1] != line:
+                    output.append(line)
+
+    return output
+",
+"This 'algorithm' tries to makes sense of the input without relying on line endings, so that it should work correctly with some input likeThe code lends itself to being integrated into a state machine - the loop only remembers its current phrase and ""pushes"" finished phrases off onto a list, and gobbles one word at a time. Splitting on whitespaces is good.Notice the ambiguity in case #5: that cannot be reliably solved (and it is possible to have such an ambiguity also with line endings. Maybe combining both...)Output:",,"born in the U.
+S.A.
+
+# Sample decoded data
+decoded = [ 'Some', 'sentence', 'that', 'is', 'spliced.', '.', '.',
+    'and', 'has', 'a', 'continuation.',
+    'this', 'cannot', 'be', 'confused', 'by', 'U.', 'S.', 'A.', 'or', 'U.S.A.',
+    'In', 'that', 'last', 'sentence...',
+    'an', 'abbreviation', 'ended', 'the', 'sentence!' ]
+
+# List of phrases
+phrases = []
+
+# Current phrase
+phrase    = ''
+
+while decoded:
+    word = decoded.pop(0)
+    # Possibilities:
+    # 1. phrase has no terminator. Then we surely add word to phrase.
+    if not phrase[-1:] in ('.', '?', '!'):
+        phrase += ('' if '' == phrase else ' ') + word
+        continue
+    # 2. There was a terminator. Which?
+    #    Say phrase is dot-terminated...
+    if '.' == phrase[-1:]:
+        # BUT it is terminated by several dots.
+        if '..' == phrase[-2:]:
+            if '.' == word:
+                phrase += '.'
+            else:
+                phrase += ' ' + word
+            continue
+        # ...and word is dot-terminated. ""by U."" and ""S."", or ""the."" and ""."".
+        if '.' == word[-1:]:
+            phrase += word
+            continue
+        # Do we have an abbreviation?
+        if len(phrase) > 3:
+            if '.' == phrase[-3:-2]:
+                # 5. We have an ambiguity, we solve using capitals.
+                if word[:1].upper() == word[:1]:
+                    phrases.append(phrase)
+                    phrase = word
+                    continue
+                phrase += ' ' + word
+                continue
+        # Something else. Then phrase is completed and restarted.
+        phrases.append(phrase)
+        phrase = word
+        continue
+    # 3. Another terminator.
+        phrases.append(phrase)
+        phrase = word
+        continue
+
+phrases.append(phrase)
+
+for p in phrases:
+    print "">> "" + p
+
+>> Some sentence that is spliced... and has a continuation.
+>> this cannot be confused by U.S.A. or U.S.A.
+>> In that last sentence... an abbreviation ended the sentence!
+",
+"You didn't show linar_eq, but I can guess it is: list() applied to a string breaks it up, producing a list of characters.np.array on that list doesn't change things, and won't make grouping the characters any easier.  Stick with list operations.The two proposed answers follow different 'rules'.  One looks like it takes the characters 2 by 2, but then drops the '='.  The other drops the 'x'.  Why?Your problem is not clearly specified.  But I suspect you'd be better off using the regex mechanism to split up the original string.  It isn't a merging problem.  It's more of a parsing one.",,"linar_eq
+In [9]: eq = ""2x-4=5""
+
+list()
+In [10]: list(eq)
+Out[10]: ['2', 'x', '-', '4', '=', '5']
+
+np.array
+['2x', '-4', '5']
+['2', '-4', '5'] 
+
+regex",
+plan slight alternative ,,"groupby
+'car_id'
+inner
+merge
+coords
+def duper(df):
+    m = df.merge(coords)
+    c = pd.concat([m, coords])
+    # we put the merged rows first and those are
+    # the ones we'll keep after `drop_duplicates(keep='first')`
+    # `keep='first'` is the default, so I don't pass it
+    c1 = (c.drop_duplicates().values == coords.values).all()
+
+    # if `keep=False` then I drop all duplicates.  If I got
+    # everything in `coords` this should be empty
+    c2 = c.drop_duplicates(keep=False).empty
+    return c1 & c2
+
+source.set_index('car_id').groupby(level=0).filter(duper).index.unique().values
+
+array([100, 120])
+
+def duper(df):
+    m = df.drop('car_id', 1).merge(coords)
+    c = pd.concat([m, coords])
+    c1 = (c.drop_duplicates().values == coords.values).all()
+    c2 = c.drop_duplicates(keep=False).empty
+    return c1 & c2
+
+source.groupby('car_id').filter(duper).car_id.unique()
+",
+A little bit complicated but it will work in combination with str.extractOutput:,,"str.extract
+import pandas as pd
+
+df_ref = pd.DataFrame({""PH"":[""XXST"", ""XX7T""], ""ValA"": [1,2], ""ValB"": [""foo"",""bar""]})
+df = pd.DataFrame({""product_hierarchy"":[""XXSTSDASD"", ""XX7TDSADASDASD"", ""XXSTHD"", ""XX7TDFDF""], 
+                   ""Val"":[""foo"", ""bar"", ""baz"", ""bar""]})
+
+str_match = ""({})"".format(""|"".join(df_ref.PH))
+
+df.merge(df_ref, left_on=df.product_hierarchy.str.extract(str_match)[0], right_on=""PH"")
+
+    product_hierarchy   Val     PH   ValA   ValB
+0   XXSTSDASD           foo     XXST    1   foo
+1   XXSTHD              baz     XXST    1   foo
+2   XX7TDSADASDASD      bar     XX7T    2   bar
+3   XX7TDFDF            bar     XX7T    2   bar
+",
+Found a solution (probably not an elegant one). ,,"df = pd.read_csv(file_name, parse_dates=[0], index_col=0, sep=',')
+df['Date'] = df.index.date
+df['Time'] = df.index.time
+df['Time'] = df['Time'].astype(str)
+
+df = df[df['Time'] != '22:00:00']
+
+list_date = set(df['Date'])
+list_time = set(df['Time'])
+
+list_date = sorted(list_date)
+list_time = sorted(list_time)
+
+iterables = [list_date, list_time]
+indexed = pd.MultiIndex.from_product(iterables, names=['date', 'time'])
+
+df_index_date = indexed.get_level_values(0)
+df_index_time = indexed.get_level_values(1)
+
+df_joined = pd.DataFrame(df_index_date.astype(str) + ' ' + df_index_time.astype(str))
+df_joined = df_joined.reset_index()
+df_joined = df_joined.set_index(df_joined[0])
+del df_joined['index']
+del df_joined[0]
+
+df_final = df_joined.join(df)
+df_final = df_final.reset_index(drop=True)
+df_final = df_final.set_index(indexed)
+",
+"i['meds'] is not a key of description_collapses. The rules are the value of description_collapsed.get(i[""category""]), so you need to extend that value.You also had your parentheses wrong.Note that your final result will be a dictionary, not a list.",,"i['meds']
+description_collapses
+description_collapsed.get(i[""category""])
+description_collapsed = {}
+for i in description:
+    if i[""category""] in description_collapsed:
+        description_collapsed.[i[""category""]].extend(i[""meds""])
+    else:
+        description_collapsed[i[""category""]] = i[""meds""]
+",
+"Why don't you try to use append, even though it is not the most elegant way ?For write files use open()
+For example, ",,"    A =
+
+    [('This', 'DT'),
+     ('shoe', 'NN'),
+     ('is', 'BEZ'),
+     ('of', 'IN'),
+     ('Blue', 'JJ-TL'),
+     ('color', 'NN'),
+     ('.', '.')]
+
+    B =
+    [('This', 'Other'),
+     ('shoe', 'Product'),
+     ('is', 'Other'),
+     ('of', 'Other'),
+     ('Blue', 'Color'),
+     ('color', 'Other'),
+     ('.', 'Other')]
+
+    Title = 
+    [('This', ),
+     ('shoe', ),
+     ('is', ),
+     ('of', ),
+     ('Blue', ),
+     ('color', ),
+     ('.', )]
+
+    for j, item in enumerate(A):
+        Title[j].append(item)
+        Title[j].append(B[j][1])
+
+    for tuple in Title:
+        line = '{0[0]} {0[1]} {0[2]}'.format(tuple)
+
+    f = open('This/is/your/destination/file.txt', 'w')
+    # Here you do something
+
+    f.write( )
+    f.close()
+",
+"You can use merge with left join, if only X is joined column on parameter can be omit:If multiple same columns names:",http://pandas.pydata.org/pandas-docs/stable/generated/pandas.merge.html,"merge
+X
+on
+df = pd.merge(df1, df2, how='left')
+print (df)
+    A    B      X   C    D
+0  NA   50  IW233  12  Jan
+1  EU   23  IW455  50  Aug
+2  LA   21  IW455  50  Aug
+3  ME  100  IW100  16  Nov
+
+df = pd.merge(df1, df2, on='X', how='left')
+print (df)
+    A    B      X   C    D
+0  NA   50  IW233  12  Jan
+1  EU   23  IW455  50  Aug
+2  LA   21  IW455  50  Aug
+3  ME  100  IW100  16  Nov
+",
+extracted.assign(x=extracted['COMPL_DATE'].dt.normalize() - will add a new column x with truncated time (i.e. 00:00:00) - we can use this column for joining:,,"extracted.assign(x=extracted['COMPL_DATE'].dt.normalize()
+x
+00:00:00
+df = pd.merge(source, extracted.assign(x=extracted['COMPL_DATE'].dt.normalize()), 
+              left_on = 'SESSION_SCHED', right_on = 'x')
+",
+"I suggest you to use json, which is specific for JSON object manipulation. You can do something like this:where json.load() convert a string to a json object, while json.dumps() convert a json to a string. The parameter indent let you print the object in the expanded way.",,"json
+    import json
+
+with open('example1.json') as f:
+    data1 = json.load(f)
+
+with open('example2.json') as f:
+    data2 = json.load(f)
+
+with open('example3.json') as f:
+    data3 = json.load(f)
+
+items1 = data1[""items""]
+#print(json.dumps(items1, indent=2))
+items2 = data2[""items""]
+items3 = data3[""items""]
+
+listitem = [items1, items2, items3]
+finaljson = {""items"" : []}
+
+finaljson[""items""].append(items1)
+finaljson[""items""].append(items2)
+finaljson[""items""].append(items3)
+print(json.dumps(finaljson, indent=2))
+
+with open('merged_json.json', ""w"") as f:
+    f.write(json.dumps(finaljson, indent=2))
+
+json.load()
+json.dumps()
+indent",
+"You can use pd.concat to literally join by the index of the dataframe.  This means both of your dataframes have to be preordered and you simply ""pasting"" one dataframe next to the other.Output:",,"pd.concat
+pd.concat([df1, df2[['Issue']], axis=1)
+
+  IDs  Value1  Value2 Issue
+0  AB       1       3    AA
+1  AB       1       1   AAA
+2  AB       2       4    BA
+3  BC       2       2    CC
+4  BC       5       0    CA
+5  BG       1       1     A
+6  RF       2       2     D
+",
+"In the above mentioned code there is a discrepancy in the logic.
+For instance:It should be Same for the second end of the list condition. That is the reason the ending value 4 is being erased. Hope this helps.",,"if(current1.val <= current.val2):
+    if(current1.next is None):
+        #this is wrong as you are skipping the present current1 val 
+        prev1.next =current2
+
+if(current1.val <= current.val2):
+    if(current1.next is None):
+        prev1.next = current1
+        prev1 = prev1.next
+        prev1.next =current2
+
+4",
+Try this :Output :Here is another way without one-liner :,,"c = [[sorted(i+k) for k in j] for i,j in zip(a,b)]
+
+[[[3, 7, 9, 28], [3, 7, 9, 28], [3, 7, 9, 28]], 
+ [[3, 4, 28], [4, 7, 28], [4, 7, 28]], 
+ [[7, 11, 28], [3, 11, 28], [3, 7, 12, 28]]]
+
+c = b[:]
+for i,j in zip(a,c):
+    for k in j:
+        k.extend(i)
+        k.sort()
+",
+"If you intend to merge the id dict into each dict with the other structure, this works:",,"id
+id_dict = [d for d in l if 'id' in d][0]
+merge = [ {**d, **id_dict} for d in l if 'id' not in d]
+",
+"Your csv file apparently has 5 columns, but your data is a single list of values. That means that you also only need 1 column header. Pandas complains right now because the dimension of the column list (5) does not match the number of columns in your data (1). You could fix this for example by saying:That is assuming that you want to use the first column name.",,"df = pd.DataFrame(data=data, index=None, columns=[columns[0]])
+",
+The presence of a cursos indicates you're using pyodbc. data contains pyodbc.Row objects and hence the pd.DataFrame constructor fails to split the data.Try this,,"pyodbc
+data
+pyodbc.Row
+pd.DataFrame
+df = pandas.DataFrame([tuple(t) for t in cursor.fetchall()], columns=columns)
+",
+I would suggest to read the csv files into dataframes and concatenate them this way,,"frames = [pd.read_csv('f1.csv'), pd.read_csv('f2.csv')]
+result = concat(frames,ignore_index=True)
+",
+You can use zip:Output:Or:,,"zip
+my_list1 = [""Harry"", ""Bob""]
+my_list2 = [""21"", ""23""]
+new_data = [dict(zip(['name', 'age'], i)) for i in zip(my_list1, my_list2)]
+
+[{'age': '21', 'name': 'Harry'}, {'age': '23', 'name': 'Bob'}]
+
+[{'name':a,'age':b} for a, b in zip(my_list1, my_list2)]
+",
+"It seems that you have a list of dictionaries and a list of keys and want to create a dictionary of dictionaries with keys from the second list.
+Here is some simplified example of doing this (assuming both your lists are the same length):",,"ids = [1, 2, 3, 4]
+dicts = [{'a':'b'}, {'c':'d'}, {'e':'f'}, {'g':'h'}]
+dict_of_dicts = {i:d for i, d in zip(ids, dicts)}
+print dict_of_dicts
+#{1: {'a': 'b'}, 2: {'c': 'd'}, 3: {'e': 'f'}, 4: {'g': 'h'}}
+",
+"So, instead of two JSONs, I converted the forst array to a string array ([""1"",""2"",""3"",...]) and using zip I've merged two arrays and then converted it to a JSON:And the result is:",,"[""1"",""2"",""3"",...]
+zip
+idArray='[""1"",""2"",""3"",...]'
+dictionaries='[[{""caption_fa"": ""some value"", ""caption_en"": ""something"", ""id"": 2},
+{""caption_fa"": ""somthing"", ""caption_en"": ""somthing"", ""id"": 1}],
+[{""caption_fa"": ""some value"", ""caption_en"": ""something"", ""id"": 3},
+{""caption_fa"": ""somthing"", ""caption_en"": ""somthing"", ""id"": 4}]]'
+import json
+theArray = dict(zip(idArray, dictionaries))
+theJson =  json.dumps(theArray )
+
+[[""1"":{""caption_fa"": ""some value"", ""caption_en"": ""something"", ""id"": 2},
+    {""caption_fa"": ""somthing"", ""caption_en"": ""somthing"", ""id"": 1}],
+    [""2"":{""caption_fa"": ""some value"", ""caption_en"": ""something"", ""id"": 3},
+    {""caption_fa"": ""somthing"", ""caption_en"": ""somthing"", ""id"": 4}]]
+",
+Use this code :Ouptut:,,"list1= [['user1', 186, 'Feb 2017, Apr 2017', 550, 555], ['user2', 282, 'Mai 2017', 0, 3579], ['user3', 281, 'Mai 2017', 10, 60]]
+
+list2= [['user1', 186, 'Feb 2017, Mar 2017, Mai 2017', 0, 740],['user2', 282, 'Feb 2017', 0, 1000], ['user4', 288, 'Feb 2017', 60, 10]]
+
+final_list = []
+for l1_data, l2_data in zip(list1, list2):
+    if l1_data[0] == l2_data[0]:
+        for index, elem in enumerate(l2_data):
+            if index+1 <= len(l1_data):
+                if not elem and l1_data[index]:
+                    l2_data[index] = l1_data[index]                    
+    else: final_list.append(l1_data)
+    final_list.append(l2_data)
+print final_list
+
+[['user1', 186, 'Feb 2017, Mar 2017, Mai 2017', 550, 740], ['user2', 282, 'Feb 2017', 0, 1000], ['user3', 281, 'Mai 2017', 10, 60], ['user4', 288, 'Feb 2017', 60, 10]]
+",

@@ -1,0 +1,2049 @@
+answer,link,code,sc
+You can either use update:output:Or loc:output:,,"update
+Empty_DF.update(ROI_DF)
+
+     a    b  c
+a  0.0  5.0  0
+b  1.0  6.0  0
+c  2.0  7.0  0
+d  0.0  0.0  0
+e  3.0  8.0  0
+f  0.0  0.0  0
+
+loc
+Empty_DF.loc[ROI_DF.index, ROI_DF.columns] = ROI_DF
+
+   a  b  c
+a  0  5  0
+b  1  6  0
+c  2  7  0
+d  0  0  0
+e  3  8  0
+f  0  0  0
+",
+You can put the different column into index and then concat them:Output:,,"pd.concat([plantsFrame.set_index(['plants']), fruitsFrame.set_index(['fruit'])])
+
+      run 1 run 2   run 3   max
+mint    12  22      1.3     22
+cactus  13  23      20.0    23
+papaya  22  21      21.0    22
+orange  20  2       2.0     20
+",
+"Your desired outputs are no longer really model serializers as for example you completely loose the relationships between materials and stores. You should instead consider building your own dictionary, then converting it to a custom json and just pass it as a response as explained here:
+https://stackoverflow.com/a/35019122/12197595",https://stackoverflow.com/a/35019122/12197595,,
+"First off, don't feel bad as I had to test this to see why it doesn't work, and I wrote the thing.The merge() use case is one where you're taking some kind of in-application data, either from an offline cache or some locally modified structure, and moving it into a new Session.   merge() is mostly about merging changes, so when it sees attributes that have no ""change"", it assumes no special work is needed.   So it skips unloaded relationships.  If it did follow unloaded relationships, the merge process would become a very slow and burdensome operation as it traverses the full graph of relationships loading everything recursively, potentially loading a significant portion of the database into memory for a highly interlinked schema.  The ""copy from one database to another"" use case here was not anticipated.the data does go in if you just make sure all those edges are loaded ahead of time, here's a demo.   the default cascade is ""save-update, merge"" also so you don't have to specify that.",,"from sqlalchemy import create_engine, Column, String, Integer, ForeignKey
+from sqlalchemy.orm import Session, relationship, backref, immediateload
+from sqlalchemy.ext.declarative import declarative_base
+import os
+
+Base = declarative_base()
+
+class Person(Base):
+    __tablename__ = ""people""
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+
+    def __init__(self, name):
+        self.name = name
+
+
+class Edge(Base):
+    __tablename__ = ""edges""
+    id = Column(Integer, primary_key=True)
+    kid_id = Column(Integer, ForeignKey(""people.id""))
+    parent_id = Column(Integer, ForeignKey(""people.id""))
+    kid = relationship(""Person"", primaryjoin=""Edge.kid_id==Person.id"",
+                       backref=backref(""parent_edges"",
+                                       collection_class=set))
+    parent = relationship(""Person"", primaryjoin=""Edge.parent_id==Person.id"",
+                          backref=backref(""kid_edges"",
+                                          collection_class=set))
+
+    def __init__(self, kid, parent):
+        self.kid = kid
+        self.parent = parent
+
+def teardown():
+    for path in (""in.db"", ""out.db""):
+        if os.path.exists(path):
+            os.remove(path)
+
+def fixture():
+    engine = create_engine(""sqlite:///in.db"", echo=True)
+    Base.metadata.create_all(engine)
+
+    s = Session(engine)
+    p1, p2, p3, p4, p5 = [Person('p%d' % i) for i in xrange(1, 6)]
+    Edge(p1, p2)
+    Edge(p1, p3)
+    Edge(p4, p3)
+    Edge(p5, p2)
+    s.add_all([
+        p1, p2, p3, p4, p5
+    ])
+    s.commit()
+    return s
+
+def copy(source_session):
+    engine = create_engine(""sqlite:///out.db"", echo=True)
+    Base.metadata.create_all(engine)
+
+    s = Session(engine)
+    for person in source_session.query(Person).\
+            options(immediateload(Person.parent_edges),
+                        immediateload(Person.kid_edges)):
+        s.merge(person)
+
+    s.commit()
+
+    assert s.query(Person).count() == 5
+    assert s.query(Edge).count() == 4
+
+teardown()
+source_session = fixture()
+copy(source_session)
+",
+So after working on this project I gained some more insight. I found a solution but was hoping for a cleaner one. But this works: we can concat the rows from the original dataframe which have ClockIndate.isnull:,,"cleaner
+ClockIndate.isnull
+df_merge = pd.merge(df1, df2, on=['Company', 'Resource'], how='left')
+
+df_filter = df_merge[df_merge.ClockInDate.between(df_merge.EffectiveFrom, df_merge.EffectiveTo) | df_merge.EffectiveFrom.isnull()]
+
+df_final = pd.concat([df_filter, df1[df1.ClockInDate.isnull()]], sort=True)
+
+print(df_final)
+  ClockInDate Company EffectiveFrom EffectiveTo Resource
+1  2019-02-09       A    2019-01-01  2099-12-31     ResA
+3  2019-02-09       A    2019-01-01  2099-12-31     ResB
+4  2019-02-09       A           NaT         NaT     ResC
+5  2019-02-09       B           NaT         NaT     ResD
+7  2019-02-09       B    2019-01-01  2099-12-31     ResE
+9  2019-02-09       B    2019-01-01  2099-12-31     ResF
+6         NaT       B           NaT         NaT     ResG
+",
+"That's the editor that is opened so that you can write the commit message. That means the merge went well, no conflicts. Just set the comment, save the file and quit and the merge revision should be done.",,,
+"IIUC, this is a case of pd.cut:Output:",,"pd.cut
+df1['label'] = pd.cut(df1['time'], 
+                      bins=list(df2['time'])+[np.inf], 
+                      labels=df2['label'])
+
+    time  speaker label
+0   0.25        1    10
+1   0.25        2    10
+2   0.50        1    10
+3   0.50        2    10
+4   0.75        1    10
+5   0.75        2    10
+6   1.00        1    10
+7   1.00        2    10
+8   1.25        1    11
+9   1.25        2    11
+10  1.50        1    11
+11  1.50        2    11
+12  1.75        1    11
+13  1.75        2    11
+14  2.00        1    11
+15  2.00        2    11
+",
+"You could create a dataframe out of the list of tuples, and then merge twice. e.g.",,"# Create df from list of tuples
+tuple_df = pd.DataFrame(list_of_couples, columns=['a', 'b'])
+
+# Merge table_a with tuples
+merged = pd.merge(table_a, tuple_df, left_index=True, right_on='a')
+
+# Merge result with table_b
+merged = pd.merge(merged, table_b, right_index=True, left_on='b')
+
+# Removing intermediate join columns
+merged = merged.drop(['a','b'], axis=1)
+
+>>> print(merged)
+
+  col_a col_b col_c col_d
+0     1     2     9     8
+1     1     1     3     3
+",
+I would try to create a temporary key to join on:Output:,,"#unzip list_of_couples into index for table_a and table_b
+a, b  = zip(*list_of_couples)
+
+#Loop on length of index to assign same value of key to each table for the appropriate index
+for i in range(len(a)):
+    df_a.loc[a[i], 'key'] = i
+    df_b.loc[b[i], 'key'] = i
+
+#merge dataframes on 'key', remove NaN records and drop temporary 'key' column
+df_a.merge(df_b, on='key').dropna(subset=['key']).drop('key', axis=1)
+
+   col_a  col_b  col_c  col_d
+0      1      2      9      8
+5      1      1      3      3
+",
+"I am not sure how your data is structured however, it seems you want certain attributes form excel2 in excel1.. This will merge on the column specified.",,"excel1.merge(excel2, left_on='No.')
+",
+"Updated answer courtesy @OP:(Old Answer - don't use)You don’t have to create a variation each circle. Chain them:Update: Reduce is awesome in simplicity and speed, but for readability, it is less readable compared to mergers: We could DRY the code:",,"dfs = [df1, df2, df3, df4, df5] 
+from functools import partial 
+outer_merge = partial(pd.merge, how='outer') 
+reduce(outer_merge, dfs)
+
+ df= df5.merge(df4[['code', 'name']],
+            left_on='provinceCode', 
+            right_on='code', 
+            how='left'
+            ).merge(df3[['code', 'name']], 
+            left_on='areaCode', 
+            right_on='code', 
+            how = 'left'
+            ).merge(df2[['code', 'name']], 
+            left_on='areaCode',
+            right_on='code',
+            how ='left'
+            ).merge(df1[['provinceCode', 'provinceName']],
+            left_on='provinceCode',
+            right_on='code',
+            how='left')
+
+common_joins = dict(right_on='code', how='left')
+common_columns = ['code', 'name']
+
+df= df5.merge(df4[common_columns],
+            left_on='provinceCode', 
+            **common_joins
+            ).merge(df3[common_columns], 
+            left_on='areaCode', 
+            **common_joins
+            ).merge(df2[common_columns], 
+            left_on='areaCode',
+            **common_joins
+            ).merge(df1[['provinceCode', 'provinceName']],
+            left_on='provinceCode',
+            **common_joins)
+",
+Consider a concatenation with merge which would translate your SQL query as OR is often analogous to a UNION:,,"OR
+UNION
+pd.concat([pd.merge(table_A, table_B, on='one'),
+           pd.merge(table_A, table_B, left_on='two', right_on='one')])
+",
+"One option would be to recreate one of the columns from table_A in table_B.I will flesh out a case. A is a DataFrame of first and last names, and you want to fill in each person's ""score.""  B is a DataFrame of scores with just one name associated - it could be the first or last.  We can use A to create a map for the ambiguous name column in B.",,"A = pd.DataFrame({'firstName': ['Adam', 'Bob', 'Charlie'],
+            'lastName': ['Axe', 'Button', 'Cobb']})
+
+# B's name column has two first names and one last name.
+B = pd.DataFrame({'name': ['Adam', 'Bob', 'Cobb'],
+                 'score': ['A', 'B', 'C']})
+
+# A mappable Series
+s = A.set_index('firstName').lastName  
+B['lastName'] = B.name.replace(s)  
+cols = ['lastName', 'score']
+A.merge(B[cols], on='lastName')
+",
+"UPDATE:I've solved this with a relatively simple method, in which I converted the series to a list, and just set a new column in the dataframe equal to the list. However, I would be really curious to hear if others have better/different/unique solutions to this problem. Thanks!",,,
+"This include two problem, 1 multiple dataframes merge, 2 duplicated key mergeNotice name here we can always modify by renameMethod 2 from cancat not consider the key one merge with index",,"merge
+def multikey(x): 
+    return x.assign(key=x.groupby('Color').cumcount())
+
+#we use groupby and cumcount create the addtional key
+
+from functools import reduce
+
+#then use reduce
+
+df = reduce(lambda left,right: 
+            pd.merge(left,right,on=['Color','key'],how='outer'), 
+            list(map(multikey, [df1,df2,df3])))
+df
+  Color      date_x  key      date_y      date
+0     A      2011.0    0      2013.0      2011
+1     B    201411.0    0  20151111.0    201411
+2     C  20151231.0    0    201101.0  20151231
+3     A      2019.0    1         NaN      2019
+4     Y         NaN    0         NaN  20070212
+
+rename
+cancat
+s=pd.concat([df1,df2,df3],keys=['df1','df2','df3'], axis=1)
+s.columns=s.columns.map('_'.join)
+s=s.filter(like='_date')
+s
+     df1_date    df2_date  df3_date
+0      2011.0      2013.0      2011
+1    201411.0  20151111.0    201411
+2  20151231.0    201101.0  20151231
+3      2019.0         NaN      2019
+4         NaN         NaN  20070212
+",
+"You can use DataFrame.join with rename and parameter on, then DataFrame.set_index with DataFrame.reorder_levels:Or use Index.map:",http://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.join.html http://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.set_index.html http://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.reorder_levels.html http://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Index.map.html,"DataFrame.join
+rename
+on
+DataFrame.set_index
+DataFrame.reorder_levels
+result = (df.join(s1.rename('cnts'), on='Pet')
+           .set_index('cnts', append=True)
+           .reorder_levels([0,2,1]))
+print (result)
+                      Favloc
+Pet     cnts Name           
+Cat     3    Kitty     couch
+             Harry   windows
+             Bear        bed
+             Sam      basket
+Dog     3    Max       floor
+             Hunter   carper
+Hamster 1    Fluffy  Haybale
+
+Index.map
+idx = df.index.get_level_values('Pet').map(s1.rename('cnts').get)
+result = df.set_index(idx, append=True).reorder_levels([0,2,1])
+print (result)
+                      Favloc
+Pet     cnts Name           
+Cat     3    Kitty     couch
+             Harry   windows
+             Bear        bed
+             Sam      basket
+Dog     3    Max       floor
+             Hunter   carper
+Hamster 1    Fluffy  Haybale
+",
+"I still recommend merge then filter , here we using Boolean index and combine_first",,"combine_first
+df=df1.merge(df2,on='Key')
+m=(df.InitialAdmit_y>=df.InitialAdmit_x)&(df.InitialAdmit_y<=df.InitialAdmit_x)
+df1.set_index('Key').combine_first(df[m].set_index('Key'))
+
+
+Out[215]: 
+          90DayRange InitialAdmit InitialAdmit_x InitialAdmit_y
+Key                                                            
+100000204 2012-09-02   2012-06-04            NaT            NaT
+100000255 2012-08-01   2012-05-03     2012-05-03     2012-06-03
+100000271 2012-04-15   2012-01-16            NaT            NaT
+100000286 2013-01-24   2012-10-26     2012-10-26     2012-11-26
+100000628 2012-05-21   2012-02-21            NaT            NaT
+",
+"Consider reduce for the chain merge using a left join. Below demonstrates with 3 copies of df2. Also, below assumes InitialAdmit is the last column of the dataframe. Reorder as needed.",,"reduce
+import pandas 
+import numpy
+from functools import reduce    
+...
+
+# LIST OF DATAFRAMES WITH SUFFIXING OF INITIALADMIT TO AVOID NAME COLLISION
+dfList = [d.rename(columns={'InitialAdmit':'InitialAdmit_' + str(i)}) 
+          for i,d  in enumerate([df1, df2, df2, df2])]
+
+# USER-DEFINED METHOD CONDITIONING ON LAST COLUMN
+def mergefilter(x, y):
+    tmp = pandas.merge(x, y, on='Key', how='left')
+    tmp.loc[~(tmp.iloc[:, -1].between(tmp['InitialAdmit_0'], tmp['90DayRange'])), 
+            tmp.columns[-1]] = numpy.nan
+
+    return tmp
+
+finaldf = reduce(mergefilter, dfList)
+
+print(finaldf)
+#    90DayRange InitialAdmit_0        Key InitialAdmit_1 InitialAdmit_2 InitialAdmit_3
+# 0  2012-09-02     2012-06-04  100000204            NaN            NaN            NaN
+# 1  2012-08-01     2012-05-03  100000255     2012-06-03     2012-06-03     2012-06-03
+# 2  2012-04-15     2012-01-16  100000271            NaN            NaN            NaN
+# 3  2013-01-24     2012-10-26  100000286     2012-11-26     2012-11-26     2012-11-26
+# 4  2012-05-21     2012-02-21  100000628            NaN            NaN            NaN
+",
+"You need create MultiIndex in columns first, then reshape by unstack and last reset_index:If input is file better is use parameter header for MultiIndex:",http://pandas.pydata.org/pandas-docs/stable/generated/pandas.DataFrame.unstack.html http://pandas.pydata.org/pandas-docs/stable/generated/pandas.DataFrame.reset_index.html,"MultiIndex
+unstack
+reset_index
+print (df)
+      Sales    Sales1      Sales2
+0  Jan 2000  Feb 2000  Month 2000
+1      2000      3000        4000
+2      7000      8000        3000
+
+#MultiIndex by first row
+df.columns = [df.columns, df.iloc[0]]
+#remove first row by indexing - [1:]
+df = df.iloc[1:].unstack().reset_index(name='val')
+df.columns = ['a','b','c','val']
+print (df)
+        a           b  c   val
+0   Sales    Jan 2000  0  2000
+1   Sales    Jan 2000  1  7000
+2  Sales1    Feb 2000  0  3000
+3  Sales1    Feb 2000  1  8000
+4  Sales2  Month 2000  0  4000
+5  Sales2  Month 2000  1  3000
+
+file
+header
+MultiIndex
+import pandas as pd
+
+temp=u""""""Sales;Sales1;Sales2
+Jan 2000;Feb 2000;Month 2000
+2000;3000;4000
+7000;8000;3000""""""
+#after testing replace 'pd.compat.StringIO(temp)' to 'filename.csv'
+df = pd.read_csv(pd.compat.StringIO(temp), sep=';',header=[0,1])
+print (df)
+
+     Sales   Sales1     Sales2
+  Jan 2000 Feb 2000 Month 2000
+0     2000     3000       4000
+1     7000     8000       3000
+
+print (df.columns)
+MultiIndex(levels=[['Sales', 'Sales1', 'Sales2'], ['Feb 2000', 'Jan 2000', 'Month 2000']],
+           labels=[[0, 1, 2], [1, 0, 2]])
+
+df = df.unstack().reset_index(name='val')
+df.columns = ['a','b','c','val']
+print (df)
+        a           b  c   val
+0   Sales    Jan 2000  0  2000
+1   Sales    Jan 2000  1  7000
+2  Sales1    Feb 2000  0  3000
+3  Sales1    Feb 2000  1  8000
+4  Sales2  Month 2000  0  4000
+5  Sales2  Month 2000  1  3000
+",
+"If I understand correctly, you want to recursively merge the nodes until there is no overlap between the edges. My idea was to start with a fully connected graph and ""recursively"" merge the nodes. Here is a 'fake' recursive implementation. EDIT: I'm not too sure why networkx is necessary here, it could be done with just dicts (maybe more clear). ",https://i.stack.imgur.com/7rS6L.png,"import networkx as nx
+
+# file you provided
+with open('temp.txt', 'r') as f:
+    lines = f.readlines()
+
+
+
+nodes = {}
+for idx, line in enumerate(lines):
+    authors, title, venue = line.split('<>')[1:4]
+    authors = set(authors.split(','))
+    nodes[idx] = dict(authors = authors, title = (title, ))
+
+G = nx.complete_graph(len(nodes))
+nx.set_node_attributes(G, nodes)
+
+
+def merge_recursive(G, target = 'authors'):
+    """"""
+    Keeps merging if there is overlap between nodes
+    """"""
+    # check edges
+    while G.edges():
+        for (i, j) in G.edges():
+            overlap = G.nodes()[i][target].intersection(G.nodes()[j][target])
+            # copy values
+            if overlap:
+                tmp = {}
+                for k, v in G.nodes()[i].items():
+                    if isinstance(v, set):
+                        tmp[k] = v.union(G.nodes()[j][k])
+                    else:
+                        tmp[k] = v + G.nodes()[j][k]
+
+                nx.set_node_attributes(G, {i: tmp})
+                G.remove_node(j)
+            # no overlap remove edge
+            else:
+                G.remove_edge(i, j)
+            break
+    return G
+
+merged = merge_recursive(G.copy())
+
+from matplotlib.pyplot import subplots
+
+fig, (left, right) = subplots(1, 2, figsize = (10,  5))
+nx.draw(G, ax = left, with_labels = 1)
+nx.draw(merged, ax = right, with_labels = 1)
+
+left.set_title('Before merging')
+right.set_title('After merging')
+fig.show()
+",
+"temp (temperature) dataframe:humid dataframe:Now the temp dataframe looks like:Do the same for humid df:Now humid is:Reindex temp, replace the dates as you like:And now left join:Make sure this actually worked:Hooray!",,"                 datetime  temperature
+0  2017-06-13 22:20:11.309         82.4
+1  2017-06-13 22:19:54.004         82.4
+2  2017-06-13 22:19:36.661         82.4
+3  2017-06-13 22:19:19.359         82.4
+
+                 datetime  humidity
+0  2017-06-13 22:07:30.723      63.0
+1  2017-06-13 22:07:13.448      63.0
+2  2017-06-13 22:06:56.115      63.0
+3  2017-06-13 22:06:38.806      63.0
+
+
+
+temp.datetime = pd.to_datetime(temp.datetime) #convert to datetime dtype
+temp.set_index('datetime', inplace=True) #make it the index
+temp.index = temp.index.round('S') #and now round to the second
+
+                     temperature
+datetime                        
+2017-06-13 22:20:11         82.4
+2017-06-13 22:19:54         82.4
+2017-06-13 22:19:37         82.4
+2017-06-13 22:19:19         82.4
+
+humid.datetime = pd.to_datetime(humid.datetime) 
+humi.set_index('datetime', inplace=True) 
+humid.index = humid.index.round('S') 
+
+                     humidity
+datetime                     
+2017-06-13 22:07:31      63.0
+2017-06-13 22:07:13      63.0
+2017-06-13 22:06:56      63.0
+2017-06-13 22:06:39      63.0
+
+temp = temp.reindex(pd.DatetimeIndex(start='2017-06-13 22:00', end='2017-06-13 22:20', freq='S'))
+temp.head()
+
+                     temperature
+2017-06-13 22:00:00          NaN
+2017-06-13 22:00:01          NaN
+2017-06-13 22:00:02          NaN
+2017-06-13 22:00:03          NaN
+2017-06-13 22:00:04          NaN
+
+out = pd.merge(temp, humid, left_index=True, right_index=True, how='left')
+
+out.head():
+                     temperature  humidity
+2017-06-13 22:00:00          NaN       NaN
+2017-06-13 22:00:01          NaN       NaN
+2017-06-13 22:00:02          NaN       NaN
+2017-06-13 22:00:03          NaN       NaN
+2017-06-13 22:00:04          NaN       NaN
+
+out.loc['2017-06-13 22:07:31']
+                     temperature  humidity
+2017-06-13 22:07:31          NaN      63.0
+",
+"I believe the solution to your problem would be to use the pd.join(). After the join fill the master dataframe by looping through the joined dataframe and using the index to assing to each row:I don't have the output because I didn't build a master dataframe, but it should work",,"df_joined = ugt.join(ugh, how='outer')
+
+                      temperature    humidity                     
+2017-06-13 22:06:03          82.0    63.0
+2017-06-13 22:06:20          82.4    NaN
+2017-06-13 22:06:21           NaN    63.0
+2017-06-13 22:06:37          82.4    NaN
+2017-06-13 22:06:38           NaN    63.0
+2017-06-13 22:06:57          82.4    63.0
+
+for index, row in df_joined.iterrows():
+    df_master.loc[index,'humidity'] = row['humidity']
+    df_master.loc[index,'temperature'] = row['temperature']
+",
+"pandas
+pd.merge_asof + querynumpy
+np.searchsorted ",,"pandas
+pd.merge_asof
+query
+pd.merge_asof(
+    df.sort_values('ip_address'), df1,
+    left_on='ip_address', right_on='lower_bound_ip_address'
+).query('ip_address <= upper_bound_ip_address')[['ip_address', 'country']]
+
+numpy
+np.searchsorted
+b = df1.values[:, :2].ravel()
+c = df1.country.values
+ip = df.ip_address.values
+srch = b.searchsorted(ip) // 2
+mask = (ip >= b[0]) & (ip <= b[-1])
+df.loc[mask, 'country'] = c[srch[mask]]
+",
+I think what you are looking for is going to be more like this...This is assuming df is a list of dictionaries. This will append the country to each dictionary if the number falls into the correct range.,,"for x in df['ip_address']:
+    for y in df1:
+        if x<=y['upper_bound_ip_address'] and x>=y['lower_bound_ip_address']:
+            x['country']=y['country']
+",
+what is the difference with @Geoff's answer and this one?,,"for x in range(0, len(df)):
+    for y in range(0, len(df1)):
+        if (df.iloc[x,'ip_address'] <= df1.iloc[y,'upper_bound_ip_address'] and (df.iloc[x,'ip_address'] >= df1.iloc[y,'lower_bound_ip_address']):
+            df['country']=df1.iloc[y,'country']
+",
+try pandas.DataFrame.updateModify DataFrame in place using non-NA values from passed DataFrame. Aligns on indices,http://pandas.pydata.org/pandas-docs/stable/generated/pandas.DataFrame.update.html,"DataFrame.update(other, join='left', overwrite=True,
+                 filter_func=None, raise_conflict=False)
+",
+"You should know the shape of returned array. Suppose, myArray.shape = (2, 4)
+Then",,"allArrays = np.empty((0, 4))
+for x in range(0, 1000):
+    myArray = myFunction(x)
+    allArrays = np.append(allArrays, myArray, axis = 0)
+",
+"You probably meanA more concise approach (see wims answer) is to use a list comprehension, ",http://docs.python.org/2/tutorial/datastructures.html#list-comprehensions,"allArrays = np.array([])
+for x in range(0, 1000):
+    myArray = myFunction(x)
+    allArrays = np.concatenate([allArrays, myArray])
+
+allArrays = np.concatenate([myFunction(x) for x in range]) 
+",
+"I believe you can use forward filling for first column, if first non missing value is first value of group and then aggregate with GroupBy.first for first non missing value per groups:Detail:If first column is index:",http://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.core.groupby.GroupBy.first.html,"GroupBy.first
+df = df.groupby(df['file name'].ffill()).first().reset_index(drop=True)
+print (df)
+    file name format     location
+0  movie1.mp4    mp4  D:/mymovies
+
+print (df['file name'].ffill())
+0    movie1.mp4
+1    movie1.mp4
+2    movie1.mp4
+Name: file name, dtype: object
+
+df = df.groupby(df.index.to_series().ffill()).first().reset_index()
+print (df)
+    file name format     location
+0  movie1.mp4    mp4  D:/mymovies
+",
+"Unfortunately, your question does not describe what you want to achieve in a way that it could become useful to anyone with a similar problem. Indeed, you wanted to obtain a sorted merge for repeated merging keys.The logical way to proceed is add a sequence number to make the merging multiple key unique. Then what follows is a trivial merge.",https://stackoverflow.com/questions/29353096/add-a-sequence-number-to-each-element-in-a-group-using-python,"left['Order'] = left.groupby(['key1','key2']).cumcount()
+right['Order'] = right.groupby(['key1','key2']).cumcount()
+
+result = left.merge(right, how='left', 
+                    on=['key1','key2','Order']).drop('Order',axis=1)
+",
+"You could go ahead and do the concatenation inside your for loop. However, if you are set on doing the concatenation after the fact and want them separated by commas, then I assume you are okay with the data becoming strings instead of floats. If that is the case, and you know that the columns and indexes are identical and in the same order, you can do: ",,"df = hapX_count.astype(str) + ',' + hapY_count.astype(str)
+",
+"You can join the transposed dataframes, transpose the result again, and add a default numeric index:",,"df1.T.join(df2.T, rsuffix='r').T.reset_index(drop=True)
+#       colx  coly  colz
+#0      45.0  35.0  54.0
+#1      22.0   NaN  11.0
+",
+"Is it because NaN must be connected with a float ?Correct. There is no NaN value in an int, so missing values can only be represented in floats.You could either filter your data before merging, making sure that there are no NaNs created.Or you could fill in the NaNs with a value of your choosing after the merge, and then restore the dtype.",,,
+You can use pd.concat to join groupby results and then apply sum:,,"pd.concat
+sum
+>>> pd.concat([xd0,xd1],axis=1)
+                  export  export
+origin dest year                
+aus    ind  2000       6       6
+            2001       8       8
+chn    aus  2001      40      40
+ind    aus  2000      19      19
+            2001      42      42
+            2002      30      30
+       chn  2000       9       9
+            2001      13      13
+            2002      14      14
+
+>>> pd.concat([xd0,xd1],axis=1).sum(axis=1)
+origin  dest  year
+aus     ind   2000    12
+              2001    16
+chn     aus   2001    80
+ind     aus   2000    38
+              2001    84
+              2002    60
+        chn   2000    18
+              2001    26
+              2002    28
+",
+"Using pandas:To get rid of duplicate rows as well:This will not get rid of duplicates as the dataframe is created, but after. So a dataframe gets created by concatenating all of the files. Then it is de-duplicated. The final dataframe can then be saved to csv.",,"import pandas as pd
+
+interesting_files = glob.glob(""/home/tcs/PYTHONMAP/test1/*.csv"") 
+df = pd.concat((pd.read_csv(f, header = 0) for f in interesting_files))
+df.to_csv(""output.csv"")
+
+import pandas as pd
+
+interesting_files = glob.glob(""/home/tcs/PYTHONMAP/test1/*.csv"") 
+df = pd.concat((pd.read_csv(f, header = 0) for f in interesting_files))
+df_deduplicated = df.drop_duplicates()
+df_deduplicated.to_csv(""output.csv"")
+",
+Need same index values in both DataFrames created by reset_index and parameter reset_index(drop=True):,http://pandas.pydata.org/pandas-docs/stable/generated/pandas.DataFrame.reset_index.html,"reset_index
+reset_index(drop=True)
+df3 = pd.concat([df1['col1'].reset_index(drop=True), 
+                 df2['col1'].reset_index(drop=True)], axis=1)
+df3.columns = ['col1 (df1)','col1 (df2)']
+print (df3)
+   col1 (df1)  col1 (df2)
+0       0.000      70.997
+1       0.055      71.002
+2       0.096      71.065
+3       0.131      71.101
+",
+If dicts have same keys:if not:and you can use collections.defaultdict in this solution:,,">>> {k: v + dict2.get(k, []) for k, v in dict1.iteritems()}
+{'a': [1, 2, 3, 100, 101, 103], 'b': [4, 5, 6, 104, 105, 106]}
+
+>>> from itertools import chain
+>>> res = {}
+>>> for k, v in chain(dict1.iteritems(), dict2.iteritems()):
+...     res[k] = res.get(k, []) + v
+... 
+>>> res
+{'a': [1, 2, 3, 100, 101, 103], 'b': [4, 5, 6, 104, 105, 106]}
+
+collections.defaultdict
+>>> from collections import defaultdict
+>>> res = defaultdict(list)
+>>> for k, v in chain(dict1.iteritems(), dict2.iteritems()):
+...     res[k] += v
+... 
+>>> dict(res)
+{'a': [1, 2, 3, 100, 101, 103], 'b': [4, 5, 6, 104, 105, 106]}
+",
+"If the dictionaries have the same keys, I think this is the simplest solution:If the dictionaries have different keys, but you only care about the keys which are the same:Otherwise, another answer will do!",,"res = {k : dict1[k]+dict2[k] for k in dict1}
+
+res = {k : dict1[k]+dict2[k] for k in set(dict1) & set(dict2)}
+",
+"A little bit tricky , using shift create the groupkey , then agg ",,"shift
+agg
+df.fillna('NaN',inplace=True) # notice here NaN always no equal to NaN, so I replace it with string 'NaN'
+df.groupby((df.drop('Y',1)!=df.drop('Y',1).shift()).any(1).cumsum()).\
+     agg(lambda x : ','.join(x) if x.name=='Y' else x.iloc[0])
+Out[19]: 
+         Y   X1    X2    X3    X4    X5
+1    A,B,C  NaN -3810  TRUE  None  None
+2  D,E,F,G  NaN -3810  None  None  None
+3        H  NaN -3810  TRUE  None  None
+",
+Good to remember that itertools.groupby handles constructiveness for us.,,"itertools.groupby
+itertools.groupby
+from itertools import groupby
+
+Y = df.Y
+X = df.filter(like='X').T  # df.drop('Y', 1).T
+K = lambda x: (*X[x].fillna('NA'),)
+
+tups = [
+    (' '.join(Y.loc[V]), *X[V[0]])
+    for _, [*V] in groupby(Y.index, key=K)
+]
+
+pd.DataFrame(tups, columns=df.columns)
+
+         Y  X1    X2    X3    X4    X5
+0    A B C NaN -3810  TRUE  None  None
+1  D E F G NaN -3810  None  None  None
+2        H NaN -3810  TRUE  None  None
+3        I NaN  2540  TRUE  None  None
+4        J NaN  2540  None  True  None
+",
+"I think you want to use drop_duplicates(). Here's a simplified example:Output:As you can see, the ""foo3"" row from the second dataframe gets filtered out because it is already contained in the first dataframe.In your case you would use something like:",,"import pandas as pd
+
+df = pd.DataFrame([[""foo"", ""bar""],[""foo2"", ""bar2""],[""foo3"", ""bar3""]], columns=[""first_column"", ""second_column""])
+df2 = pd.DataFrame([[""foo3"", ""bar4""],[""foo4"", ""bar5""],[""foo5"", ""bar6""]], columns=[""first_column"", ""second_column""])
+
+print(pd.concat([df, df2], ignore_index=True).drop_duplicates(subset=""first_column""))
+
+  first_column second_column
+0          foo           bar
+1         foo2          bar2
+2         foo3          bar3
+4         foo4          bar5
+5         foo5          bar6
+
+pd.concat([stats, stats2], ignore_index=True).drop_duplicates(subset=""Player""))
+",
+"Your doing a ton of work to put a <table> tag into a table. Let pandas do that for you (it uses BeautifulSoup under the hood). Then to merge, there's 2 ways you can do it:1) Make one of the dataframes only have what is not contained in the other (However, keep columns that you will do the merge on).2) Drop columns from the second dataframe that are in the dataframe (again, make sure to not drop the columns you will do the merge on.OR",,"<table>
+import pandas as pd
+
+def scrape_data(url):
+    stats = pd.read_html(url)[0]
+    return stats
+
+
+df1 = scrape_data(""https://basketball-reference.com/leagues/NBA_2020_advanced.html"")
+df1 = df1[df1['Rk'] != 'Rk']
+
+df2 = scrape_data(""https://basketball-reference.com/leagues/NBA_2020_per_poss.html"")
+df2 = df2[df2['Rk'] != 'Rk']
+
+uniqueCols = [ col for col in df2.columns if col not in df1.columns ]
+
+# Below will do the same as above line
+#uniqueCols = list(df2.columns.difference(df1.columns))
+
+df2 = df2[uniqueCols + ['Player', 'Tm']]
+
+df = df1.merge(df2, how='left', on=['Player', 'Tm'])
+
+import pandas as pd
+
+def scrape_data(url):
+    stats = pd.read_html(url)[0]
+    return stats
+
+
+df1 = scrape_data(""https://basketball-reference.com/leagues/NBA_2020_advanced.html"")
+df1 = df1[df1['Rk'] != 'Rk']
+
+df2 = scrape_data(""https://basketball-reference.com/leagues/NBA_2020_per_poss.html"")
+df2 = df2[df2['Rk'] != 'Rk']
+
+dropCols = [ col for col in df1.columns if col in df2.columns and col not in ['Player','Tm']]
+df2 = df2.drop(dropCols, axis=1)
+
+df = df1.merge(df2, how='left', on=['Player', 'Tm'])
+",
+"You didn't show linar_eq, but I can guess it is: list() applied to a string breaks it up, producing a list of characters.np.array on that list doesn't change things, and won't make grouping the characters any easier.  Stick with list operations.The two proposed answers follow different 'rules'.  One looks like it takes the characters 2 by 2, but then drops the '='.  The other drops the 'x'.  Why?Your problem is not clearly specified.  But I suspect you'd be better off using the regex mechanism to split up the original string.  It isn't a merging problem.  It's more of a parsing one.",,"linar_eq
+In [9]: eq = ""2x-4=5""
+
+list()
+In [10]: list(eq)
+Out[10]: ['2', 'x', '-', '4', '=', '5']
+
+np.array
+['2x', '-4', '5']
+['2', '-4', '5'] 
+
+regex",
+You can concatenate them column-wise by passing param axis=1:,http://pandas.pydata.org/pandas-docs/stable/generated/pandas.concat.html#pandas.concat,"axis=1
+In [26]:
+
+pd.concat([df,df1],axis=1)
+Out[26]:
+   Column A  Column B  Column C  Column A  Column B  Column C
+0       100       200       300       400       500       600
+",
+"you can use groupby to get all the matching dicts, then unify them using ChainMap, like this:Output:",https://docs.python.org/3/library/itertools.html#itertools.groupby https://docs.python.org/3/library/collections.html#collections.ChainMap,"groupby
+ChainMap
+from itertools import groupby
+from operator import itemgetter
+from collections import ChainMap
+
+list1 = [{'name': 'Nick', 'id': '123456'}, {'name': 'Donald', 'id': '999'}]
+list2 = [{'address': 'London', 'id': '123456'}, {'address': 'NYC', 'id': '999'}]
+
+grouped_subdicts = groupby(sorted(list1 + list2, key=itemgetter(""id"")), itemgetter(""id""))
+
+result = [dict(ChainMap(*g)) for k, g in grouped_subdicts]
+
+print(result)
+
+[{'id': '123456', 'address': 'London', 'name': 'Nick'},
+{'id': '999', 'address': 'NYC', 'name': 'Donald'}]
+",
+"Use set_index and map:Output:Map will be faster than merge, since we are only mapping a single column.%timeit df1['Age'] = df1['Name'].map(df2.set_index('Name')['Age'])
+  1.22 ms ± 34.4 µs per loop (mean ± std. dev. of 7 runs, 1000 loops each)%timeit df1.merge(df2)
+  2.93 ms ± 73.3 µs per loop (mean ± std. dev. of 7 runs, 100 loops each)",,"set_index
+map
+df1['Age'] = df1['Name'].map(df2.set_index('Name')['Age'])
+print(df1)
+
+    Name Book  Age
+0   John   B1   25
+1   John   B2   25
+2   John   B1   25
+3   Paul   B3   18
+4   Paul   B4   18
+5  Jimmy   B3   28
+",
+"This isn't pretty, but what if you did something like this:And this would be the general case:",,"df2 = DataFrame(df, copy=True)
+df2[['lat2', 'lon2']] = df[['lat', 'lon']].shift(-1)
+df2.set_index(['lat', 'lon', 'lat2', 'lon2'], inplace=True)
+print(df2.loc[(12, 10, 13, 9)].reset_index(drop=True))
+
+   car_id
+0     100
+1     120
+
+raw_data = {'car_id': [100, 100, 100, 110, 110, 110, 110, 120, 120, 120, 120, 130],
+            'lat': [10, 12, 13, 23, 13, 12, 12, 11, 12, 13, 14, 12],
+            'lon': [15, 10, 9, 8, 9, 10, 2, 11, 10, 9, 8, 10],
+           }
+df = pd.DataFrame(raw_data, columns = ['car_id', 'lat', 'lon'])
+
+raw_data = {
+             'lat': [10, 12, 13],
+             'lon': [15, 10, 9],
+           }
+
+coords = pd.DataFrame(raw_data, columns = ['lat', 'lon'])
+
+def submatch(df, match):
+    df2 = DataFrame(df['car_id'])
+    for x in range(match.shape[0]):
+        df2[['lat{}'.format(x), 'lon{}'.format(x)]] = df[['lat', 'lon']].shift(-x)
+
+    n = match.shape[0]
+    cols = [item for sublist in
+        [['lat{}'.format(x), 'lon{}'.format(x)] for x in range(n)]
+        for item in sublist]
+
+    df2.set_index(cols, inplace=True)
+    return df2.loc[tuple(match.stack().values)].reset_index(drop=True)
+
+print(submatch(df, coords))
+
+   car_id
+0     100
+",
+plan slight alternative ,,"groupby
+'car_id'
+inner
+merge
+coords
+def duper(df):
+    m = df.merge(coords)
+    c = pd.concat([m, coords])
+    # we put the merged rows first and those are
+    # the ones we'll keep after `drop_duplicates(keep='first')`
+    # `keep='first'` is the default, so I don't pass it
+    c1 = (c.drop_duplicates().values == coords.values).all()
+
+    # if `keep=False` then I drop all duplicates.  If I got
+    # everything in `coords` this should be empty
+    c2 = c.drop_duplicates(keep=False).empty
+    return c1 & c2
+
+source.set_index('car_id').groupby(level=0).filter(duper).index.unique().values
+
+array([100, 120])
+
+def duper(df):
+    m = df.drop('car_id', 1).merge(coords)
+    c = pd.concat([m, coords])
+    c1 = (c.drop_duplicates().values == coords.values).all()
+    c2 = c.drop_duplicates(keep=False).empty
+    return c1 & c2
+
+source.groupby('car_id').filter(duper).car_id.unique()
+",
+A little bit complicated but it will work in combination with str.extractOutput:,,"str.extract
+import pandas as pd
+
+df_ref = pd.DataFrame({""PH"":[""XXST"", ""XX7T""], ""ValA"": [1,2], ""ValB"": [""foo"",""bar""]})
+df = pd.DataFrame({""product_hierarchy"":[""XXSTSDASD"", ""XX7TDSADASDASD"", ""XXSTHD"", ""XX7TDFDF""], 
+                   ""Val"":[""foo"", ""bar"", ""baz"", ""bar""]})
+
+str_match = ""({})"".format(""|"".join(df_ref.PH))
+
+df.merge(df_ref, left_on=df.product_hierarchy.str.extract(str_match)[0], right_on=""PH"")
+
+    product_hierarchy   Val     PH   ValA   ValB
+0   XXSTSDASD           foo     XXST    1   foo
+1   XXSTHD              baz     XXST    1   foo
+2   XX7TDSADASDASD      bar     XX7T    2   bar
+3   XX7TDFDF            bar     XX7T    2   bar
+",
+"Create a conditional to find if there is an overlap between the two frames, create new columns based on the conditionals, and merge, using how='outer'What I observed from the data is that if the overlap (end-start) in df_1 is greater than or equal to the overlap in df_2, then add start_data_2, otherwise, leave as is. The calculation hinges on that; if it is a false premise OP, do let me know.",,"#create overlap columns
+
+df_1['overlap']= df_1.end - df_1.start
+df_2['overlap']= df_2.end - df_2.start
+
+cond1 = df_1.overlap.ge(df_2.overlap)
+df_1['key'] = np.where(cond1, df_2.some_data_2,'n1')
+df_2['key'] = np.where(cond1, df_2.some_data_2,'n')
+
+(pd
+ .merge(df_1,df_2,
+        how='outer',
+        on='key',
+        suffixes = ('_1','_2'))
+ .drop(['key','overlap_1','overlap_2'],
+       axis=1)
+  )
+
+   start_1  end_1   some_data_1 start_2 end_2   some_data_2
+0   0.0     5.0        AA        0.0    5.0      AA_AA
+1   10.0    17.0       BB       12.0    17.0     BB_BB
+2   23.0    28.0       CC       23.0    25.0     CC_CC
+3   35.0    41.0       DD       NaN     NaN      NaN
+4   NaN     NaN        NaN      55.0    62.0     DD_DD
+",
+"Is there a reason you're avoiding creating some objects to manage this? If it were me, I'd go objects and do something like the following (this is completely untested, there may be typos):Now I can right code that looks like:This is just a starting point. Now you can you add methods that group (and sum) the expenditures list by decoration (e.g. ""I spent HOW MUCH on Twinkies last month???""). You can add a method that parses entries from a file, or emits them to a csv list. You can do some charting based on time.",,"#!/usr/bin/env python3
+
+from datetime import datetime # why python guys, do you make me write code like this??
+from operator import itemgetter
+
+class BudgetCategory(object):
+    def __init__(self, name, allowance):
+        super().__init__()
+            self.name = name # string naming this category, e.g. 'Food'
+            self.allowance = allowance # e.g. 400.00 this month for Food
+            self.expenditures = [] # initially empty list of expenditures you've made
+
+    def spend(self, amount, when=None, description=None):
+        ''' Use this to add expenditures to your budget category'''
+        timeOfExpenditure = datetime.utcnow() if when is None else when #optional argument for time of expenditure
+        record = (amount, timeOfExpenditure, '' if description is None else description) # a named tuple would be better here...
+        self.expenditures.append(record) # add to list of expenditures
+        self.expenditures.sort(key=itemgetter(1)) # keep them sorted by date for the fun of it
+
+    # Very tempting to the turn both of the following into @property decorated functions, but let's swallow only so much today, huh?
+    def totalSpent(self):
+        return sum(t[0] for t in self.expenditures)
+
+    def balance(self):
+        return self.allowance - self.totalSpent()
+
+budget = BudgetCategory(name='Food', allowance=200)
+budget.spend(5)
+budget.spend(8)
+
+print('total spent:', budget.totalSpent())
+print('left to go:', budget.balance())
+",
+You can improve the speed (by a factor of about 3 on the given example) of your merge by making the key column the index of your dataframes and using join instead.,,"key
+join
+left2 = left.set_index('key')
+right2 = right.set_index('key')
+
+In [46]: %timeit result2 = left2.join(right2)
+1000 loops, best of 3: 361 µs per loop
+
+In [47]: %timeit result = pd.merge(left, right, on='key')
+1000 loops, best of 3: 1.01 ms per loop
+",
+"I believe you can use dask.
+and function merge.Docs say:What definitely works?Cleverly parallelizable operations (also fast):Join on index: dd.merge(df1, df2, left_index=True, right_index=True)Or:Operations requiring a shuffle (slow-ish, unless on index)Set index: df.set_index(df.x)Join not on the index: pd.merge(df1, df2, on='name')You can also check how Create Dask DataFrames.Example",http://dask.pydata.org/en/latest/index.html http://dask.pydata.org/en/latest/dataframe-api.html?highlight=merge#dask.dataframe.core.DataFrame.merge http://dask.pydata.org/en/latest/dataframe.html#what-definitely-works http://dask.pydata.org/en/latest/dataframe-create.html,"merge
+import pandas as pd
+
+left = pd.DataFrame({'key': ['K0', 'K1', 'K2', 'K3'],
+                      'A': ['A0', 'A1', 'A2', 'A3'],
+                     'B': ['B0', 'B1', 'B2', 'B3']})
+
+
+right = pd.DataFrame({'key': ['K0', 'K1', 'K2', 'K3'],
+                      'C': ['C0', 'C1', 'C2', 'C3'],
+                      'D': ['D0', 'D1', 'D2', 'D3']})
+
+
+result = pd.merge(left, right, on='key')
+print result
+    A   B key   C   D
+0  A0  B0  K0  C0  D0
+1  A1  B1  K1  C1  D1
+2  A2  B2  K2  C2  D2
+3  A3  B3  K3  C3  D3
+
+import dask.dataframe as dd
+
+#Construct a dask objects from a pandas objects
+left1 = dd.from_pandas(left, npartitions=3)
+right1 = dd.from_pandas(right, npartitions=3)
+
+#merge on key
+print dd.merge(left1, right1, on='key').compute()
+    A   B key   C   D
+0  A3  B3  K3  C3  D3
+1  A1  B1  K1  C1  D1
+0  A2  B2  K2  C2  D2
+1  A0  B0  K0  C0  D0
+
+#first set indexes and then merge by them
+print dd.merge(left1.set_index('key').compute(), 
+               right1.set_index('key').compute(), 
+               left_index=True, 
+               right_index=True)
+      A   B   C   D
+key                
+K0   A0  B0  C0  D0
+K1   A1  B1  C1  D1
+K2   A2  B2  C2  D2
+K3   A3  B3  C3  D3
+",
+"You can do:to find the columns that the two df's have in common , then replace those in the first with the columns from the second.
+This will give you results for example given an initial A:and New_df:   And we wind up with  final 'A', with y column taken from New_df:",,"cols1=set(A.columns.tolist())
+cols2=set(New_df.columns.tolist())
+common_cols = list(cols1.intersection(cols2))
+A[common_cols]=New_df[common_cols]
+
+   x  y     
+0  1  a
+1  2  b
+2  3  c
+
+   z  y
+0  4  d
+1  5  e
+2  6  f
+
+   x  y
+0  1  d
+1  2  e
+2  3  f
+",
+With a comprehension,,"l1=[('This', 'DT'), ('shoe', 'NN'), ('is', 'BEZ'), ('of', 'IN'), ('Blue', 'JJ-TL'), ('color', 'NN'), ('.', '.')]
+l2=[('This', 'Other'), ('shoe', 'Product'), ('is', 'Other'), ('of', 'Other'), ('Blue', 'Color'), ('color', 'Other'), ('.', 'Other')]
+
+l3=[(x[0][0],x[0][1],x[1][1]) for x in zip(l1, l2)]
+",
+"Why don't you try to use append, even though it is not the most elegant way ?For write files use open()
+For example, ",,"    A =
+
+    [('This', 'DT'),
+     ('shoe', 'NN'),
+     ('is', 'BEZ'),
+     ('of', 'IN'),
+     ('Blue', 'JJ-TL'),
+     ('color', 'NN'),
+     ('.', '.')]
+
+    B =
+    [('This', 'Other'),
+     ('shoe', 'Product'),
+     ('is', 'Other'),
+     ('of', 'Other'),
+     ('Blue', 'Color'),
+     ('color', 'Other'),
+     ('.', 'Other')]
+
+    Title = 
+    [('This', ),
+     ('shoe', ),
+     ('is', ),
+     ('of', ),
+     ('Blue', ),
+     ('color', ),
+     ('.', )]
+
+    for j, item in enumerate(A):
+        Title[j].append(item)
+        Title[j].append(B[j][1])
+
+    for tuple in Title:
+        line = '{0[0]} {0[1]} {0[2]}'.format(tuple)
+
+    f = open('This/is/your/destination/file.txt', 'w')
+    # Here you do something
+
+    f.write( )
+    f.close()
+",
+"There is problem you have duplicates in customerId column.So solution is remove them, e.g. by drop_duplicates:Sample:",http://pandas.pydata.org/pandas-docs/stable/generated/pandas.DataFrame.drop_duplicates.html,"customerId
+drop_duplicates
+df2 = df2.drop_duplicates('customerId')
+
+df = pd.DataFrame({'customerId':[1,2,1,1,2], 'full name':list('abcde')})
+print (df)
+   customerId full name
+0           1         a
+1           2         b
+2           1         c
+3           1         d
+4           2         e
+
+df2 = pd.DataFrame({'customerId':[1,2,1,2,1,1], 'full name':list('ABCDEF')})
+print (df2)
+   customerId full name
+0           1         A
+1           2         B
+2           1         C
+3           2         D
+4           1         E
+5           1         F
+
+merge = pd.merge(df, df2, on='customerId', how='left')
+print (merge)
+    customerId full name_x full name_y
+0            1           a           A
+1            1           a           C
+2            1           a           E
+3            1           a           F
+4            2           b           B
+5            2           b           D
+6            1           c           A
+7            1           c           C
+8            1           c           E
+9            1           c           F
+10           1           d           A
+11           1           d           C
+12           1           d           E
+13           1           d           F
+14           2           e           B
+15           2           e           D
+
+df2 = df2.drop_duplicates('customerId')
+merge = pd.merge(df, df2, on='customerId', how='left')
+print (merge)
+   customerId full name_x full name_y
+0           1           a           A
+1           2           b           B
+2           1           c           A
+3           1           d           A
+4           2           e           B
+",
+"I do not see repeats as a whole row but there are repetetions in customerId. You could remove them using:where df could be the dataframe corresponding to amount or one obtained post merge. In case you want fewer rows (say n), you could use:",,"    df.drop_duplicates('customerId', inplace = 1) 
+
+    df.groupby('customerId).head(n)
+",
+"Just need concat, then sort_index ,and set_index",,"concat
+sort_index
+set_index
+pd.concat([df1,df2]).sort_index().set_index('minute',append=True)
+Out[705]: 
+          values
+  minute        
+0 1          3.0
+  1          0.3
+1 2          4.0
+  2          0.4
+2 1          1.0
+  1          0.1
+3 4          6.0
+  4          0.6
+",
+Use pd.concat with the keys argument to combine:You can then stack,,"pd.concat
+keys
+df = pd.concat([df1, df2], axis=1, keys=['Count', 'Percentage'])
+df
+
+   Count        Percentage       
+  minute values     minute values
+0      1      3          1    0.3
+1      2      4          2    0.4
+2      1      1          1    0.1
+3      4      6          4    0.6
+
+df.stack(0)
+
+              minute  values
+0 Count            1     3.0
+  Percentage       1     0.3
+1 Count            2     4.0
+  Percentage       2     0.4
+2 Count            1     1.0
+  Percentage       1     0.1
+3 Count            4     6.0
+  Percentage       4     0.6
+",
+"You can use merge with left join, if only X is joined column on parameter can be omit:If multiple same columns names:",http://pandas.pydata.org/pandas-docs/stable/generated/pandas.merge.html,"merge
+X
+on
+df = pd.merge(df1, df2, how='left')
+print (df)
+    A    B      X   C    D
+0  NA   50  IW233  12  Jan
+1  EU   23  IW455  50  Aug
+2  LA   21  IW455  50  Aug
+3  ME  100  IW100  16  Nov
+
+df = pd.merge(df1, df2, on='X', how='left')
+print (df)
+    A    B      X   C    D
+0  NA   50  IW233  12  Jan
+1  EU   23  IW455  50  Aug
+2  LA   21  IW455  50  Aug
+3  ME  100  IW100  16  Nov
+",
+"You can use a join operator here:So we first change the index of the right frame to X (since these are unique on the right frame, that is not a problem). Then we perform a join on the X column.",,"join
+>>> df1.join(df2.set_index('X'),on='X')
+    A    B      X   C    D
+0  NA   50  IW233  12  Jan
+1  EU   23  IW455  50  Aug
+2  LA   21  IW455  50  Aug
+3  ME  100  IW100  16  Nov
+
+X
+X",
+"I think you need concat, but first set index of each DataFrame by common column:If need join by merge:",http://pandas.pydata.org/pandas-docs/stable/generated/pandas.concat.html http://pandas.pydata.org/pandas-docs/stable/generated/pandas.DataFrame.merge.html,"concat
+DataFrame
+dfs = [df.set_index('id') for df in dfList]
+print pd.concat(dfs, axis=1)
+
+merge
+from functools import reduce
+df = reduce(lambda df1,df2: pd.merge(df1,df2,on='id'), dfList)
+",
+extracted.assign(x=extracted['COMPL_DATE'].dt.normalize() - will add a new column x with truncated time (i.e. 00:00:00) - we can use this column for joining:,,"extracted.assign(x=extracted['COMPL_DATE'].dt.normalize()
+x
+00:00:00
+df = pd.merge(source, extracted.assign(x=extracted['COMPL_DATE'].dt.normalize()), 
+              left_on = 'SESSION_SCHED', right_on = 'x')
+",
+"Upon review, the real reason the timestamp did not display after the merge is that the only rows that were selected in the merge had 00:00:00 for a timestamp. Hence, this time is assumed and not explicitly displayed. ",,,
+May be better to use dict for your database queries. Something like:And you can iterate by dict if you need.,,"merged_dict ={""viewAllUq"":viewAllUq, 
+""doneBids"": doneBids
+}
+view_all_uq = merged_dict.get(""viewAllUq"")
+",
+"As an alternative to @wim's dict comprehension you could use a defaultdict of lists, extending each value while iterating over the input dictionaries:If desired you can convert result back to a standard dict:",https://stackoverflow.com/a/42265284/21945,"defaultdict
+from collections import defaultdict
+
+result = defaultdict(list)
+
+for d in d1, d2:
+    for k in d:
+        result[k].extend(d[k])
+
+result
+result = dict(result)
+",
+Another alternative using defaultdict of list and chain:,,"defaultdict
+chain
+from itertools import chain
+from collections import defaultdict
+
+d3 = defaultdict(list)
+for k, val in chain(d1.items(), d2.items()):
+    d3[k] = d3[k] + val
+",
+"Get all the keys using a set union d1.keys() | d2.keys(), then it's a dict comprehension:Note: If you get TypeError then you're using an older version of Python.  You can just change .keys() to .viewkeys() to make it work in that case.  ",,"d1.keys() | d2.keys()
+>>> {k: d1.get(k, []) + d2.get(k, []) for k in (d1.keys() | d2.keys())}
+{'1': [12, 32, 44, 12, 34, 15, 11, 44, 42, 14],
+ '2': [21, 34, 11, 65, 11, 24, 41, 65],
+ '3': [44, 12, 98, 41, 22, 48],
+ '4': [65, 71]}
+
+TypeError
+.keys()
+.viewkeys()",
+"List of tuples to list of DataFrames:Concatenate, then sort by the index:",,"list_of_dfs = [i[1] for i in oplist]
+
+concat_df = pd.concat(list_of_dfs).sort_index()
+",
+"A way you could do it and which would result in cleaner code in to define a function that takes two JSON objects and return the combination of those two.Then, after you have output_list:Result will be the object you are looking for.If you're not familiar with the reduce function, check out this web page: http://book.pythontips.com/en/latest/map_filter.htmlIt briefly explains the usage of reduce, as well as map and filter. They are very useful.",http://book.pythontips.com/en/latest/map_filter.html,"def merge (json_obj_1, json_obj_2):
+    items = json_obj_1['items'] + json_obj_2['items']
+    return { 'items': items }
+
+result = reduce(merge, output_list)
+",
+"You're using the json module to convert the JSON file into Python objects, but you're not using the module to convert those Python objects back into JSON. Instead of this at the endtry this:(Note that this is also wrapping the all_items array in a dictionary so that you get the output you expect, otherwise the output will be a JSON array, not an object with an ""items"" key).",,"json
+textfile_merged.write(str(all_items))
+
+json.dump({ ""items"": all_items }, textfile_merged)
+
+all_items
+""items""",
+"You can use pd.concat to literally join by the index of the dataframe.  This means both of your dataframes have to be preordered and you simply ""pasting"" one dataframe next to the other.Output:",,"pd.concat
+pd.concat([df1, df2[['Issue']], axis=1)
+
+  IDs  Value1  Value2 Issue
+0  AB       1       3    AA
+1  AB       1       1   AAA
+2  AB       2       4    BA
+3  BC       2       2    CC
+4  BC       5       0    CA
+5  BG       1       1     A
+6  RF       2       2     D
+",
+Use cumcount for counter column in both DataFrames and add this column to parameter on in merge:Details:,http://pandas.pydata.org/pandas-docs/stable/generated/pandas.core.groupby.GroupBy.cumcount.html,"cumcount
+DataFrame
+on
+merge
+df1['g'] = df1.groupby('IDs').cumcount()
+df2['g'] = df2.groupby('IDs').cumcount()
+
+df3 = pd.merge(df1,df2,on=['IDs', 'g']).drop('g', axis=1)
+print (df3)
+  IDs  Value1  Value2 Issue
+0  AB       1       3    AA
+1  AB       1       1   AAA
+2  AB       2       4    BA
+3  BC       2       2    CC
+4  BC       5       0    CA
+5  BG       1       1     A
+6  RF       2       2     D
+
+print (df1)
+  IDs  Value1  Value2  g
+0  AB       1       3  0
+1  AB       1       1  1
+2  AB       2       4  2
+3  BC       2       2  0
+4  BC       5       0  1
+5  BG       1       1  0
+6  RF       2       2  0
+
+print (df2)
+  IDs Issue  g
+0  AB    AA  0
+1  AB   AAA  1
+2  AB    BA  2
+3  BC    CC  0
+4  BC    CA  1
+5  BG     A  0
+6  RF     D  0
+",
+The solution can be much simpler:If you don't want to use itertools you can use this approach:,,"from itertools import chain
+
+lst1 = [1,2,4]
+lst2 = [1,3,4]
+
+output = list(chain.from_iterable(zip(lst1, lst2)))
+
+itertools
+output = [x for t in zip(lst1, lst2) for x in t]
+",
+Verified solution (using heapq.merge):Prints:On leetcode it was classified as Success (link):,https://docs.python.org/3.8/library/heapq.html#heapq.merge https://leetcode.com/submissions/detail/289269685/ https://i.stack.imgur.com/2A4zb.png,"heapq.merge
+from heapq import merge
+
+class ListNode(object):
+    def __init__(self, x):
+        self.val = x
+        self.next = None
+
+class Solution(object):
+    def mergeTwoLists(self, l1, l2):
+        """"""
+        :type l1: ListNode
+        :type l2: ListNode
+        :rtype: ListNode
+        """"""
+
+        def iter_list(l):
+            v = l
+            while v:
+                yield v
+                v = v.next
+
+        def create_nodes():
+            l = ListNode(None)
+            val = yield l
+            l.val = val
+            while True:
+                val = yield
+                l.next = ListNode(val)
+                l = l.next
+
+        creator = create_nodes()
+        rv = next(creator)
+        for v in merge(iter_list(l1), iter_list(l2), key=lambda k: k.val):
+            creator.send(v.val)
+
+        return None if rv.val is None else rv
+
+ # [1,2,4] and [1,3,4]
+l1 = ListNode(1)
+l1.next = ListNode(2)
+l1.next.next = ListNode(4)
+
+l2 = ListNode(1)
+l2.next = ListNode(3)
+l2.next.next = ListNode(4)
+
+def print_list(l):
+    v = l
+    while v:
+        print(v.val)
+        v = v.next
+
+new_list_node = Solution().mergeTwoLists(l1, l2)
+print_list(new_list_node)
+
+1
+1
+2
+3
+4
+4
+
+leetcode",
+You should have a look at pandas merge function.,http://pandas.pydata.org/pandas-docs/stable/generated/pandas.DataFrame.merge.html,merge,
+"Merge, join and concatenate: look here",https://pandas.pydata.org/pandas-docs/stable/merging.html,,
+In case you fancy a oneliner:,,"result = [[sorted(i+x) for i in y] for x, y in zip(a,b)]
+
+print (result)
+
+#[[[3, 9, 7, 28], [3, 9, 7, 28], [3, 9, 7, 28]], [[3, 4, 28], [4, 7, 28], [4, 7, 28]], [[7, 11, 28], [3, 11, 28], [3, 7, 12, 28]]]
+",
+Try this :Output :Here is another way without one-liner :,,"c = [[sorted(i+k) for k in j] for i,j in zip(a,b)]
+
+[[[3, 7, 9, 28], [3, 7, 9, 28], [3, 7, 9, 28]], 
+ [[3, 4, 28], [4, 7, 28], [4, 7, 28]], 
+ [[7, 11, 28], [3, 11, 28], [3, 7, 12, 28]]]
+
+c = b[:]
+for i,j in zip(a,c):
+    for k in j:
+        k.extend(i)
+        k.sort()
+",
+"another 1-liner, using enumerate instead of zip:",,"enumerate
+zip
+c = [[sorted(s1+a[i]) for s1 in s0] for i, s0 in enumerate(b)]
+",
+"If you intend to merge the id dict into each dict with the other structure, this works:",,"id
+id_dict = [d for d in l if 'id' in d][0]
+merge = [ {**d, **id_dict} for d in l if 'id' not in d]
+",
+The presence of a cursos indicates you're using pyodbc. data contains pyodbc.Row objects and hence the pd.DataFrame constructor fails to split the data.Try this,,"pyodbc
+data
+pyodbc.Row
+pd.DataFrame
+df = pandas.DataFrame([tuple(t) for t in cursor.fetchall()], columns=columns)
+",
+This is just elaborating on Arihant's answer :If you want to save it as a variable:,,"Enter3 = Enter1 + Enter2
+for all in Enter3:
+    print(all)
+
+output = []
+for all in Enter3:
+   output.append(all)
+string_output = "" "".join(output)
+print(string_output)
+",
+I don't know why most of the answers have list1+list2 as it will just append the list(s) which is not the expected output. You can try something as below. Taking order from your example provided where one element is from smaller list and other from the bigger list.,,"list1+list2
+input1='John Becky William Isaac'
+input2='James Ryan'
+input1=input1.split(' ')
+input2=input2.split(' ')
+new=[]
+
+max_list,min_list=(input1,input2) if len(input1)>len(input2) else (input2,input1)
+
+for i in range(len(min_list)):
+    new.append(min_list[i]+' '+max_list[i])
+new += max_list[len(min_list):]
+print(' '.join(new)) # James John Ryan Becky William Isaac
+",
+You need to extend the smaller list to make it same size as the other.Use your code for Enter3 as it is.,,"delta = ans(len(Enter1) - len(Enter2))
+lst_to_append = [''] * delta
+
+if len(Enter1) < len(Enter2):
+    Enter1.extend(lst_to_append)
+else:
+    Enter2.extend(lst_to_append)
+",
+If you want to use zip here its going to have to be zip_longest due to the uneven sizes of the the two,,"from itertools import zip_longest
+
+name3 = list(zip_longest(name1.split(), name2.split(), fillvalue = ''))
+print(' '.join([j for i in name3 for j in i]))
+
+James John Ryan Becky  William  Isaac
+
+zip_longest",
+First we use explode (pandas version >= 0.25.0) to convert the multiple categories per column into multiple rows and then merge on the categories and drop duplicates:Result:,https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.explode.html https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.merge.html,"explode
+merge
+import pandas as pd
+from numpy import nan
+dfp = pd.DataFrame({'contentId': {0: nan, 1: 2.0, 2: nan, 3: 4.0, 4: 5.0, 5: 6.0, 6: nan, 7: 8.0, 8: 9.0}, 'Categories': {0: '1', 1: '12;2', 2: '3', 3: '2', 4: '3;15', 5: '15', 6: '7', 7: '20', 8: '20;2'}})
+dfu = pd.DataFrame({'intrestcategories': {0: '12;2', 1: '3', 2: '15'}, 'userid': {0: 2, 1: 3, 2: 4}})
+
+dfp.Categories = dfp.Categories.str.split(';')
+dfp = dfp.explode('Categories')
+
+dfu.intrestcategories = dfu.intrestcategories.str.split(';')
+dfu = dfu.explode('intrestcategories')
+
+dfp.dropna().merge(dfu,left_on='Categories',right_on='intrestcategories')[['userid','contentId']].drop_duplicates().astype(int)
+
+    userid  contentId
+0        2          2
+2        2          4
+3        2          9
+4        3          5
+5        4          5
+6        4          6
+",
+"Given there are so many types, a lot of type checking is required, but this simple recursion should work.Also, this assumes the keys in a and b are the same, as they are in the example.",,"a
+b
+def merge(a,b,new_dict):
+    for key in a.keys():
+        if type(a[key]) != type(b[key]):
+            new_dict[key] = (a[key],b[key])
+        elif type(a[key]) == dict:
+            new_dict[key] = merge(a[key],b[key],{})
+        elif type(a[key]) == set:
+            new_dict[key] = a[key]|b[key]
+        else:
+            new_dict[key] = a[key] + b[key]
+    return new_dict
+
+c = merge(a,b,{})
+",
+As you identified the problem is that merge_sort has no way of knowing the basis of sorting. You could change merge_sort to take in an additional parameter that returns the key for each element in the sequence just like sorted does:Then change the comparison to call passed function instead of comparing elements directly:And finally pass key to recursive calls:With these changes it will work as you expect:One thing to note though is that results are not identical with sorted since merge_sort is not stable:,https://docs.python.org/3/library/functions.html#sorted https://en.wikipedia.org/wiki/Sorting_algorithm#Stability,"merge_sort
+merge_sort
+sorted
+def merge_sort(seq, key=lambda x: x):
+
+if key(left[left_counter]) < key(right[right_counter]):
+    seq[master_counter] = left[left_counter]
+    left_counter += 1
+else:
+    seq[master_counter] = right[right_counter]
+    right_counter += 1
+
+left  = merge_sort( seq[:mid_index], key )
+right = merge_sort( seq[mid_index:], key )
+
+merge_sort([4, 6, 2, 1]) # [1, 2, 4, 6]
+merge_sort(['foo', 'a', 'bar', 'foobar'], key=len) # ['a', 'bar', 'foo', 'foobar']
+
+sorted
+merge_sort
+merge_sort(['foo', 'a', 'bar', 'foobar'], key=len) # ['a', 'bar', 'foo', 'foobar']
+sorted(['foo', 'a', 'bar', 'foobar'], key=len) # ['a', 'foo', 'bar', 'foobar']
+",
+You can use the groupby method from itertools. Considering you have your original lists in a variable called lists:,,"groupby
+itertools
+lists
+from itertools import groupby
+
+lists = sorted(lists) # Necessary step to use groupby
+grouped_list = groupby(lists, lambda x: x[0])
+grouped_list = [(x[0], [k[1] for k in list(x[1])]) for x in grouped_list]      
+",
+"Just use a defaultdict.items is a list of your initial lists.
+grouped_list will be a list of the grouped lists by uid.",,"defaultdict
+import collections
+
+def group_items(items):
+    grouped_dict = collections.defaultdict(list)
+    for item in items:
+        uid = item[0]
+        t = item[1]
+        grouped_dict[uid].append(t)
+
+    grouped_list = []
+    for uid, tuples in grouped_dict.iteritems():
+        grouped_list.append([uid] + tuples)
+
+    return grouped_list
+
+items
+grouped_list",
+"If your data is stored in a dataframe, you can use .groupby to group by the 'uid', and if you transform the values (x,t,v) to a tuple ((x,t,v),), you can .sum them (i.e. concatenate them).Here's an example:On my end, it produced: ",,".groupby
+((x,t,v),)
+.sum
+df = pd.DataFrame.from_records(
+    [['a',(1,2,3)],
+    ['b',(1,2,3)],
+    ['a',(10,9,8)]], columns = ['uid', 'foo']
+)
+
+df.apply({'uid': lambda x: x, 'foo': lambda x: (x,)}).groupby('uid').sum()
+
+uid foo
+a   ((1, 2, 3), (10, 9, 8))
+b   ((1, 2, 3),)
+",
+"How about using defaultdict, like this:The output: print(dd)",,"L = [['uid1',(x1,y1,t1)],
+        ['uid1',(x2,y2,t2)],
+        ['uid2',(x3,y3,t3)],
+        ['uid3',(x4,y4,t4)],
+        ['uid2',(x5,y5,t5)]]
+
+
+from collections import defaultdict
+
+dd = defaultdict(list)
+
+for i in L:
+    dd[i[0]].append(i[1])
+
+defaultdict(list,
+            {'uid1': [(x1, y1, t1), (x2, y2, t2)],
+             'uid2': [(x3, y3, t3), (x5, y5, t5)],
+             'uid3': [(x4, y4, t4)]})
+",
+"Your naive method sounds very reasonable; I think the time complexity of it is O(NM), where N is the number of intervals you're trying to resolve, and M is the the range over which you're trying to resolve them.  The difficulty you might have is that you also have space complexity of O(M), which might use up a fair bit of memory.Here's a method for merging without building a ""master list"", which may be faster; because it treats intervals as objects, complexity is no longer tied to M.I'll represent an interval (or list of intervals) as a set of tuples (a,b,p), each of which indicates the time points from a to b, inclusively, with the integer priority p (W can be 1, and S can be 2).  In each interval, it must be the case that a < b.  Higher priorities are preferred.We need a predicate to define the overlap between two intervals:When we find overlaps, we need to resolve them.  This method takes care of that, respecting priority:Finally, merge_intervals takes an iterable of intervals and joins them together until there are no more overlaps:I think this has worst-case time complexity of O(N^4), although the average case should be fast.  In any case, you may want to time this solution against your simpler method, to see what works better for your problem.As far as I can see, my merge_intervals works for your examples:To cover the case with blank (B) intervals, simply add another interval tuple which covers the whole range with priority 0: (1, M, 0):",,"(a,b,p)
+a
+b
+p
+W
+1
+S
+2
+a
+b
+def has_overlap(i1, i2):
+    '''Returns True if the intervals overlap each other.'''
+    (a1, b1, p1) = i1
+    (a2, b2, p2) = i2
+    A = (a1 - a2)
+    B = (b2 - a1)
+    C = (b2 - b1)
+    D = (b1 - a2)
+    return max(A * B, D * C, -A * D, B * -C) >= 0
+
+def join_intervals(i1, i2):
+    '''
+    Joins two intervals, fusing them if they are of the same priority,
+    and trimming the lower priority one if not.
+
+    Invariant: the interval(s) returned by this function will not
+    overlap each other.
+
+    >>> join_intervals((1,5,2), (4,8,2))
+    {(1, 8, 2)}
+    >>> join_intervals((1,5,2), (4,8,1))
+    {(1, 5, 2), (6, 8, 1)}
+    >>> join_intervals((1,3,2), (4,8,2))
+    {(1, 3, 2), (4, 8, 2)}
+    '''
+    if has_overlap(i1, i2):
+        (a1, b1, p1) = i1
+        (a2, b2, p2) = i2
+        if p1 == p2:
+            # UNION
+            return set([(min(a1, a2), max(b1, b2), p1)])
+        # DIFFERENCE
+        if p2 < p1:
+            (a1, b1, p1) = i2
+            (a2, b2, p2) = i1
+        retval = set([(a2, b2, p2)])
+        if a1 < a2 - 1:
+            retval.add((a1, a2 - 1, p1))
+        if b1 > b2 + 1:
+            retval.add((b2 + 1, b1, p1))
+        return retval
+    else:
+        return set([i1, i2])
+
+merge_intervals
+import itertools
+
+def merge_intervals(intervals):
+    '''Resolve overlaps in an iterable of interval tuples.'''
+    # invariant: retval contains no mutually overlapping intervals
+    retval = set()
+    for i in intervals:
+        # filter out the set of intervals in retval that overlap the
+        # new interval to add O(N)
+        overlaps = set([i2 for i2 in retval if has_overlap(i, i2)])
+        retval -= overlaps
+        overlaps.add(i)
+        # members of overlaps can potentially all overlap each other;
+        # loop until all overlaps are resolved O(N^3)
+        while True:
+            # find elements of overlaps which overlap each other O(N^2)
+            found = False
+            for i1, i2 in itertools.combinations(overlaps, 2):
+                if has_overlap(i1, i2):
+                    found = True
+                    break
+            if not found:
+                break
+            overlaps.remove(i1)
+            overlaps.remove(i2)
+            overlaps.update(join_intervals(i1, i2))
+        retval.update(overlaps)
+    return retval
+
+merge_intervals
+# example 1
+assert (merge_intervals({(5, 8, 2), (1, 5, 1), (7, 10, 1)}) ==
+        {(1, 4, 1), (5, 8, 2), (9, 10, 1)})
+
+# example 2
+assert (merge_intervals({(5, 8, 2), (2, 10, 1)}) ==
+        {(2, 4, 1), (5, 8, 2), (9, 10, 1)})
+
+0
+(1, M, 0)
+# example 3 (with B)
+assert (merge_intervals([(1, 2, 1), (5, 8, 2), (9, 10, 1),
+                         (16, 20, 2), (1, 20, 0)]) ==
+        {(1, 2, 1), (3, 4, 0), (5, 8, 2),
+         (9, 10, 1), (11, 15, 0), (16, 20, 2)})
+",
+"The below solution has O(n + m) complexity, where n and m are the lengths of S and W lists. It assumes that S and W are internally sorted. ",,"def combine(S, W):
+    s, w = 0, 0 # indices of S and W
+    common = []
+    while s < len(S) or w < len(W):
+        # only weak intervals remain, so append them to common
+        if s == len(S):
+            common.append((W[w][0], W[w][1], 'W'))
+            w += 1
+        # only strong intervals remain, so append them to common
+        elif w == len(W):
+            common.append((S[s][0], S[s][1], 'S'))
+            s += 1
+        # assume that the strong interval starts first
+        elif S[s][0] <= W[w][0]:
+            W[w][0] = max(W[w][0], S[s][1]+1)
+            if W[w][0] > W[w][1]: # drop the weak interval
+                w += 1
+            common.append((S[s][0], S[s][1], 'S'))
+            s += 1
+        # assume that the weak interval starts first
+        elif S[s][0] > W[w][0]:
+            # end point of weak interval before the start of the strong
+            if W[w][1] < S[s][0]:
+                common.append(W[w][0], W[w][1], 'W')
+                w += 1
+            # end point of the weak interval between a strong interval
+            elif S[s][0] <= W[w][1] <= S[s][1]:
+                W[w][1] = S[s][0] - 1
+                common.append((W[w][0], W[w][1], 'W'))
+                w += 1
+            # end point of the weak interval after the end point of the strong
+            elif W[w][1] > S[s][1]:
+                common.append((W[w][0], S[s][0]-1, 'W'))
+                W[w][0] = S[s][1] + 1
+    return common
+
+
+print combine(S=[[5,8]], W=[[1, 5],[7, 10]])
+print combine(S=[[5,8]], W=[[2,10]])
+",
+"I just figure it out. This code will merge all list and put them in order 'd= [sorted(x + y +z) for x, y,z in zip(a, b,c)'",,,
+"I tried to use pandas, which I think the easiest method. The steps of my method was:1, Convert objects to DataFramepd_query_1 = pd.DataFrame.from_records(query_1)pd_query_2 = pd.DataFrame.from_records(query_2)2, Left join the two query",,"pd_query_1 = pd.DataFrame.from_records(query_1)
+pd_query_2 = pd.DataFrame.from_records(query_2)
+result = (pd.merge(pd_query_1, pd_query_2, how='left', on=['day', 'day'])).fillna(0)",
+I would suggest to read the csv files into dataframes and concatenate them this way,,"frames = [pd.read_csv('f1.csv'), pd.read_csv('f2.csv')]
+result = concat(frames,ignore_index=True)
+",
+Using reduce is another option:,,">>> a = [0, 3, 6, 9]
+b = [1, 4, 7, 10]
+c = [2, 5, 8, 11]
+>>> reduce(lambda x, y: list(x)+list(y), zip(a,b, c))
+[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+",
+You can do it like this:Since you are adding the list the merged list will contains all values from abc but not in the correct order.That's why I used .sort() to sort the list,,"a = [0, 3, 6, 9]
+b = [1, 4, 7, 10]
+c = [2, 5, 8, 11]
+merged=a+b+c
+merged.sort()
+",
+You can use zip:Output:Or:,,"zip
+my_list1 = [""Harry"", ""Bob""]
+my_list2 = [""21"", ""23""]
+new_data = [dict(zip(['name', 'age'], i)) for i in zip(my_list1, my_list2)]
+
+[{'age': '21', 'name': 'Harry'}, {'age': '23', 'name': 'Bob'}]
+
+[{'name':a,'age':b} for a, b in zip(my_list1, my_list2)]
+",
+"It seems that you have a list of dictionaries and a list of keys and want to create a dictionary of dictionaries with keys from the second list.
+Here is some simplified example of doing this (assuming both your lists are the same length):",,"ids = [1, 2, 3, 4]
+dicts = [{'a':'b'}, {'c':'d'}, {'e':'f'}, {'g':'h'}]
+dict_of_dicts = {i:d for i, d in zip(ids, dicts)}
+print dict_of_dicts
+#{1: {'a': 'b'}, 2: {'c': 'd'}, 3: {'e': 'f'}, 4: {'g': 'h'}}
+",
+"so in your current definition there is the issue with:which returns an array, but you want this to be your new dict as I understand it, so replace this withallthough to be fair implementing greenwolf's suggestion looks better for the elegance of the programEDIT**
+your final result should look something like this:in your example, your array has a key:value pair and then another dict without a key. this is not allowed. arrays can have any objects but only integers as keys. dicts can have any hashable object as key and any other type as value, for a key:value pair. so your options are either use array where index number directly relates to item id:where dict(id) looks like one of your dicts:it can even be a list of dicts:or you can use dicts as was suggested:",,"idJson=json.dumps(list(ServiceSubCategory.objects.values_list('id',flat=True)))
+
+idJson={i:[] for i in list(ServiceSubCategory.objects.values_list('id',flat=True))}
+
+def service(request):
+    idList = list(ServiceSubCategory.objects.values_list('id',flat=True))
+    idJson = {i:[] for i in idList}
+    for i in idJson:
+        cat = ServiceSubCategory.objects.get(id=i)
+        dictionary=[obj.as_json() for obj in Service.objects.filter(service_sub_category=cat)]
+        idJson[i].append(dictionary)
+    return HttpResponse(idJson, content_type='application/json')
+
+[dict1,dict2,dict3, etc..] 
+
+{""caption_fa"": ""some value"", ""caption_en"": ""something"", ""id"": 2, ""img_fa"": ""img/default_service.png""}
+
+[[dict1,dict3],[dict2,dict4]]
+
+{'1': [dict1,dict2], '2': [dict3,dict4]}
+",
+"So, instead of two JSONs, I converted the forst array to a string array ([""1"",""2"",""3"",...]) and using zip I've merged two arrays and then converted it to a JSON:And the result is:",,"[""1"",""2"",""3"",...]
+zip
+idArray='[""1"",""2"",""3"",...]'
+dictionaries='[[{""caption_fa"": ""some value"", ""caption_en"": ""something"", ""id"": 2},
+{""caption_fa"": ""somthing"", ""caption_en"": ""somthing"", ""id"": 1}],
+[{""caption_fa"": ""some value"", ""caption_en"": ""something"", ""id"": 3},
+{""caption_fa"": ""somthing"", ""caption_en"": ""somthing"", ""id"": 4}]]'
+import json
+theArray = dict(zip(idArray, dictionaries))
+theJson =  json.dumps(theArray )
+
+[[""1"":{""caption_fa"": ""some value"", ""caption_en"": ""something"", ""id"": 2},
+    {""caption_fa"": ""somthing"", ""caption_en"": ""somthing"", ""id"": 1}],
+    [""2"":{""caption_fa"": ""some value"", ""caption_en"": ""something"", ""id"": 3},
+    {""caption_fa"": ""somthing"", ""caption_en"": ""somthing"", ""id"": 4}]]
+",
+"If you always have only one row in the second dataframe, you can do:Note that tile just repeats the array elements up to a certain length (here len(df1)). This is equivalent to If you need something more performant and clean, have a look at pandas' merge function.",https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.merge.html,"for col in df2:
+   df1[col] = np.tile(df2[col].values, len(df1))
+
+tile
+len(df1)
+df2[col].values.tolist() * len(df1)
+
+merge",
+"One line solution using sorted:IMO this solution is very readable.Using heapq module, it could be more efficient, but I have not tested it. You cannot specify cmp/key function in heapq, so you have to implement Obj to be implicitly sorted.",,"def magic(*args):
+  return sorted(sum(args,[]), key: lambda x: x.points)
+
+import heapq
+def magic(*args):
+  h = []
+  for a in args:
+    heapq.heappush(h,a)
+  return [i for i in heapq.heappop(h)
+",
+"Here you go: a fully functioning merge sort for lists (adapted from my sort here):Call it like this:For good measure, I'll throw in a couple of changes to your Obj class:",http://github.com/hughdbrown/algorithm/blob/05307be15669de0541cd4e91c03b610d440b4290/mergesort.py,"def merge(*args):
+    import copy
+    def merge_lists(left, right):
+        result = []
+        while left and right:
+            which_list = (left if left[0] <= right[0] else right)
+            result.append(which_list.pop(0))
+        return result + left + right
+    lists = list(args)
+    while len(lists) > 1:
+        left, right = copy.copy(lists.pop(0)), copy.copy(lists.pop(0))
+        result = merge_lists(left, right)
+        lists.append(result)
+    return lists.pop(0)
+
+merged_list = merge(a, b, c)
+for item in merged_list:
+    print item
+
+class Obj(object):
+    def __init__(self, p) :
+        self.points = p
+    def __cmp__(self, b) :
+        return cmp(self.points, b.points)
+    def __str__(self):
+        return ""%d"" % self.points
+
+self
+__init__()
+__cmp__
+str()
+Obj",
+"I asked a similar question and got some excellent answers:The best solutions from that question are variants of the merge algorithm, which you can read about here:",https://stackoverflow.com/questions/969709/joining-a-set-of-ordered-integer-yielding-python-iterators http://en.wikipedia.org/wiki/Merge_algorithm,,
+"I don't know whether it would be any quicker, but you could simplify it with:You could also, of course, use cmp rather than key if you prefer.",,"def GetObjKey(a):
+    return a.points
+
+return sorted(a + b + c, key=GetObjKey)
+
+cmp
+key",
+"Below is an example of a function that runs in O(n) comparisons. You could make this faster by making a and b iterators and incrementing them.I have simply called the function twice to merge 3 lists:However, heapq.merge uses a mix of this method and heaping the current elements of all lists, so should perform much better ",,"def zip_sorted(a, b):
+    '''
+    zips two iterables, assuming they are already sorted
+    '''
+    i = 0
+    j = 0
+    result = []
+    while i < len(a) and j < len(b):
+        if a[i] < b[j]:
+            result.append(a[i])
+            i += 1
+        else:
+            result.append(b[j])
+            j += 1
+    if i < len(a):
+        result.extend(a[i:])
+    else:
+        result.extend(b[j:])
+    return result
+
+def genSortedList(num,seed):
+    result = [] 
+    for i in range(num):
+        result.append(i*seed)
+    return result
+
+if __name__ == '__main__':
+    a = genSortedList(10000,2.0)
+    b = genSortedList(6666,3.0)
+    c = genSortedList(5000,4.0)
+    d = zip_sorted(zip_sorted(a,b),c)
+    print d
+",
+"Instead of using a list, you can use a [heap](http://en.wikipedia.org/wiki/Heap_(data_structure).The insertion is O(log(n)), so merging a, b and c will be O(n log(n))In Python, you can use the heapq module.",http://en.wikipedia.org/wiki/Heap_(data_structure) http://docs.python.org/library/heapq.html,heapq,
+"Use the bisect module. From the documentation: ""This module provides support for maintaining a list in sorted order without having to sort the list after each insertion.""",http://docs.python.org/library/bisect.html,"bisect
+import bisect
+
+def magic(*args):
+    r = []
+    for a in args:
+        for i in a:
+            bisect.insort(r, i)
+    return r
+",
+I like Roberto Liffredo's answer. I didn't know about heapq.merge(). Hmmmph.Here's what the complete solution looks like using Roberto's lead:Or:,,"class Obj(object):
+    def __init__(self, p) :
+        self.points = p
+    def __cmp__(self, b) :
+        return cmp(self.points, b.points)
+    def __str__(self):
+        return ""%d"" % self.points
+
+a = [Obj(1), Obj(3), Obj(8)]
+b = [Obj(1), Obj(2), Obj(3)]
+c = [Obj(100), Obj(300), Obj(800)]
+
+import heapq
+
+sorted = [item for item in heapq.merge(a,b,c)]
+for item in sorted:
+    print item
+
+for item in heapq.merge(a,b,c):
+    print item
+",
+"Python standard library offers a method for it: heapq.merge.
+As the documentation says, it is very similar to using itertools (but with more limitations); if you cannot live with those limitations (or if you do not use Python 2.6) you can do something like this:However, I think it has the same complexity as your own solution, although using iterators should give some quite good optimization and speed increase.",http://docs.python.org/library/heapq.html#heapq.merge http://docs.python.org/library/itertools.html#itertools.chain,"heapq.merge
+sorted(itertools.chain(args), cmp)
+",
+you can iterate through the distinct second element of both list combined:then you can decide to add to your desired list by looking up n in both list,,"for n in set([item[1] for item in list1+list2]):
+",
+"I managed to do what you intended by changing your format. I convert all your sublists into dict with the key user.Because it easier to merge dict and the order of user in your sublists doesn't matter.The last steps is to iterate over the merged dict of list1 and list2 and do your special operation. As I understood, is to take the before last number of list1 and merge it with list2. Then you recreate your desired sublist.Output:EDITIt seems I make a mistake and your list1 have to check all the content of list2, in that case you should make a dict of list2 first and apply your specific condition after. eg:output:Note: we can get rid of defaultdict since the same key is not being to be added twice.",,"dict
+user
+user
+dict
+list1
+list2
+list1
+list2
+from itertools import chain
+from collections import defaultdict
+
+list1 = [['user1', 186, 'Feb 2017, Apr 2017', 550, 555], ['user2', 282, 'Mai 2017', 0, 3579], ['user3', 281, 'Mai 2017', 10, 60]]
+list2 = [['user1', 186, 'Feb 2017, Mar 2017, Mai 2017', 0, 740],['user2', 282, 'Feb 2017', 0, 1000], ['user4', 288, 'Feb 2017', 60, 10]]
+
+# Transform list to dict with key as 'userN'
+def to_dict(lst): return {x[0]: x[1:] for x in lst} 
+
+# Now create a dict that combined list of user1..N+1
+tmp_dict = defaultdict(list)
+for k, v in chain(to_dict(list1).items(), to_dict(list2).items()):
+  tmp_dict[k].append(v)
+
+desired_output = []
+for k, v in tmp_dict.items():
+  if len(v) == 2:
+    v[1][-2] = v[0][-2] # Take the before last of list1 to remplace with before last one of list2
+    desired_output.append([k] + v[1])
+  else:
+    desired_output.append([k] + v[0])
+
+print(desired_output)
+
+[['user1', 186, 'Feb 2017, Mar 2017, Mai 2017', 550, 740], ['user2', 282, 'Feb 2017', 0, 1000], ['user3', 281, 'Mai 2017', 10, 60], ['user4', 288, 'Feb 2017', 60, 10]]
+
+list1
+list2
+dict
+list2
+from itertools import chain
+
+list1 = [['user1', 186, 'Feb 2017, Apr 2017', 550, 555], ['user2', 282, 'Mai 2017', 0, 3579], ['user3', 281, 'Mai 2017', 10, 60]]
+list2 = [['user1', 186, 'Feb 2017, Mar 2017, Mai 2017', 0, 740],['user2', 282, 'Feb 2017', 0, 1000], ['user4', 288, 'Feb 2017', 60, 10]]
+
+# Transform list to dict with key as 'userN'
+def to_dict(lst): return {x[0]: x[1:] for x in lst} 
+
+# First, transfrom list2 to dict
+list2_dict = {}
+for k, v in to_dict(list2).items():
+  list2_dict[k] = v
+
+# Then iterate on list1 to compare
+desired_output = []
+for k, v in to_dict(list1).items():
+  if k in list2_dict: # key of list1 exists in list2
+    list2_dict[k][-2] = v[-2] # replace value
+    desired_output.append([k] + list2_dict[k]) # Then add list2
+    list2_dict.pop(k) # And remove it from old dict
+  else: # list1 does not exists in list2
+    v[-1] = 0 # Set last element to zero
+    desired_output.append([k] + v)
+
+for k, v in list2_dict.items(): # Now add elements present only in list2
+  desired_output.append([k] + v)
+
+print(desired_output)
+
+[['user1', 186, 'Feb 2017, Mar 2017, Mai 2017', 550, 740], ['user2', 282, 'Feb 2017', 0, 1000], ['user3', 281, 'Mai 2017', 10, 0], ['user4', 288, 'Feb 2017', 60, 10]]
+
+defaultdict",
+You could achieve your desired output with itertools.zip_longest with a fillvalue:Or if you need a list of lists:Note this assumes that lst1 always contains a single element as in your example.,,"itertools.zip_longest
+fillvalue
+>>> from itertools import zip_longest
+>>> list(zip_longest(lst1, lst2, fillvalue=lst1[0]))
+[('a', ['b']), ('a', ['b', 'c']), ('a', ['b', 'c', 'd'])]
+
+>>> [list(item) for item in zip_longest(lst1, lst2, fillvalue=lst1[0])]
+[['a', ['b']], ['a', ['b', 'c']], ['a', ['b', 'c', 'd']]]
+
+lst1",
+"Or you can use use append, but you need to create new copy of the lst1:",,"lst3 = []
+for elem in lst2:
+    theNew = lst1[:]
+    theNew.append(new2)
+    lst3.append(theNew)
+print(lst3)
+",
