@@ -1,0 +1,369 @@
+answer,link,code,sc
+"Your desired outputs are no longer really model serializers as for example you completely loose the relationships between materials and stores. You should instead consider building your own dictionary, then converting it to a custom json and just pass it as a response as explained here:
+https://stackoverflow.com/a/35019122/12197595",https://stackoverflow.com/a/35019122/12197595,,
+"First off, don't feel bad as I had to test this to see why it doesn't work, and I wrote the thing.The merge() use case is one where you're taking some kind of in-application data, either from an offline cache or some locally modified structure, and moving it into a new Session.   merge() is mostly about merging changes, so when it sees attributes that have no ""change"", it assumes no special work is needed.   So it skips unloaded relationships.  If it did follow unloaded relationships, the merge process would become a very slow and burdensome operation as it traverses the full graph of relationships loading everything recursively, potentially loading a significant portion of the database into memory for a highly interlinked schema.  The ""copy from one database to another"" use case here was not anticipated.the data does go in if you just make sure all those edges are loaded ahead of time, here's a demo.   the default cascade is ""save-update, merge"" also so you don't have to specify that.",,"from sqlalchemy import create_engine, Column, String, Integer, ForeignKey
+from sqlalchemy.orm import Session, relationship, backref, immediateload
+from sqlalchemy.ext.declarative import declarative_base
+import os
+
+Base = declarative_base()
+
+class Person(Base):
+    __tablename__ = ""people""
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+
+    def __init__(self, name):
+        self.name = name
+
+
+class Edge(Base):
+    __tablename__ = ""edges""
+    id = Column(Integer, primary_key=True)
+    kid_id = Column(Integer, ForeignKey(""people.id""))
+    parent_id = Column(Integer, ForeignKey(""people.id""))
+    kid = relationship(""Person"", primaryjoin=""Edge.kid_id==Person.id"",
+                       backref=backref(""parent_edges"",
+                                       collection_class=set))
+    parent = relationship(""Person"", primaryjoin=""Edge.parent_id==Person.id"",
+                          backref=backref(""kid_edges"",
+                                          collection_class=set))
+
+    def __init__(self, kid, parent):
+        self.kid = kid
+        self.parent = parent
+
+def teardown():
+    for path in (""in.db"", ""out.db""):
+        if os.path.exists(path):
+            os.remove(path)
+
+def fixture():
+    engine = create_engine(""sqlite:///in.db"", echo=True)
+    Base.metadata.create_all(engine)
+
+    s = Session(engine)
+    p1, p2, p3, p4, p5 = [Person('p%d' % i) for i in xrange(1, 6)]
+    Edge(p1, p2)
+    Edge(p1, p3)
+    Edge(p4, p3)
+    Edge(p5, p2)
+    s.add_all([
+        p1, p2, p3, p4, p5
+    ])
+    s.commit()
+    return s
+
+def copy(source_session):
+    engine = create_engine(""sqlite:///out.db"", echo=True)
+    Base.metadata.create_all(engine)
+
+    s = Session(engine)
+    for person in source_session.query(Person).\
+            options(immediateload(Person.parent_edges),
+                        immediateload(Person.kid_edges)):
+        s.merge(person)
+
+    s.commit()
+
+    assert s.query(Person).count() == 5
+    assert s.query(Edge).count() == 4
+
+teardown()
+source_session = fixture()
+copy(source_session)
+",
+sql equivalent with where:that would translate to python as:,,"SELECT t1.company,
+        t1.resource,
+        t2.company,
+        t2.resource,
+        t1.ClockInDate,
+        t2.EffectiveFrom,
+        t2.EffectiveTo
+FROM table1 t1
+LEFT JOIN table2 t2 ON t1.resource = t2.resource
+                    AND t1.company = t2.company
+WHERE t1.ClockInDate IS NULL --no ClockInDate to check
+    OR t2.company IS NULL AND t2.resource IS NULL --not rows in t2 for t1
+    OR t1.ClockInDate BETWEEN t2.EffectiveFrom AND t2.EffectiveTo --ClockInDate exists, rows in t2 exist, we can now check ClockInDate to be between t2.EffectiveFrom AND t2.EffectiveTo
+
+df_merge = pd.merge(df1, df2, on=['Company', 'Resource'], how='left')
+df_final = df_merge[df_merge.ClockInDate.isnull() | df_merge.ClockInDate.between(df_merge.EffectiveFrom, df_merge.EffectiveTo) | df_merge.EffectiveFrom.isnull()]
+",
+So after working on this project I gained some more insight. I found a solution but was hoping for a cleaner one. But this works: we can concat the rows from the original dataframe which have ClockIndate.isnull:,,"cleaner
+ClockIndate.isnull
+df_merge = pd.merge(df1, df2, on=['Company', 'Resource'], how='left')
+
+df_filter = df_merge[df_merge.ClockInDate.between(df_merge.EffectiveFrom, df_merge.EffectiveTo) | df_merge.EffectiveFrom.isnull()]
+
+df_final = pd.concat([df_filter, df1[df1.ClockInDate.isnull()]], sort=True)
+
+print(df_final)
+  ClockInDate Company EffectiveFrom EffectiveTo Resource
+1  2019-02-09       A    2019-01-01  2099-12-31     ResA
+3  2019-02-09       A    2019-01-01  2099-12-31     ResB
+4  2019-02-09       A           NaT         NaT     ResC
+5  2019-02-09       B           NaT         NaT     ResD
+7  2019-02-09       B    2019-01-01  2099-12-31     ResE
+9  2019-02-09       B    2019-01-01  2099-12-31     ResF
+6         NaT       B           NaT         NaT     ResG
+",
+"There are many ways to do this, staying in Pandas I did the following.With the file structureThis code will work, it's a little verbose for explanation but you can shorten with implementation.",,"root/  
+├── dir1/  
+│   ├── data_20170101_k   
+│   ├── data_20170102_k    
+│   ├── ...  
+├── dir2/    
+│   ├── data_20170101_k    
+│   └── data_20170101_k  
+│   └── ...   
+└── ... 
+
+import glob
+import pandas as pd
+
+CONCAT_DIR = ""/FILES_CONCAT/""
+
+# Use glob module to return all csv files under root directory. Create DF from this.
+files = pd.DataFrame([file for file in glob.glob(""root/*/*"")], columns=[""fullpath""])
+
+#    fullpath
+# 0  root\dir1\data_20170101_k.csv
+# 1  root\dir1\data_20170102_k.csv
+# 2  root\dir2\data_20170101_k.csv
+# 3  root\dir2\data_20170102_k.csv
+
+# Split the full path into directory and filename
+files_split = files['fullpath'].str.rsplit(""\\"", 1, expand=True).rename(columns={0: 'path', 1:'filename'})
+
+#    path       filename
+# 0  root\dir1  data_20170101_k.csv
+# 1  root\dir1  data_20170102_k.csv
+# 2  root\dir2  data_20170101_k.csv
+# 3  root\dir2  data_20170102_k.csv
+
+# Join these into one DataFrame
+files = files.join(files_split)
+
+#    fullpath                       path        filename
+# 0  root\dir1\data_20170101_k.csv  root\dir1   data_20170101_k.csv
+# 1  root\dir1\data_20170102_k.csv  root\dir1   data_20170102_k.csv
+# 2  root\dir2\data_20170101_k.csv  root\dir2   data_20170101_k.csv
+# 3  root\dir2\data_20170102_k.csv  root\dir2   data_20170102_k.csv
+
+# Iterate over unique filenames; read CSVs, concat DFs, save file
+for f in files['filename'].unique():
+    paths = files[files['filename'] == f]['fullpath'] # Get list of fullpaths from unique filenames
+    dfs = [pd.read_csv(path, header=None) for path in paths] # Get list of dataframes from CSV file paths
+    concat_df = pd.concat(dfs) # Concat dataframes into one
+    concat_df.to_csv(CONCAT_DIR + f) # Save dataframe
+",
+"Updated answer courtesy @OP:(Old Answer - don't use)You don’t have to create a variation each circle. Chain them:Update: Reduce is awesome in simplicity and speed, but for readability, it is less readable compared to mergers: We could DRY the code:",,"dfs = [df1, df2, df3, df4, df5] 
+from functools import partial 
+outer_merge = partial(pd.merge, how='outer') 
+reduce(outer_merge, dfs)
+
+ df= df5.merge(df4[['code', 'name']],
+            left_on='provinceCode', 
+            right_on='code', 
+            how='left'
+            ).merge(df3[['code', 'name']], 
+            left_on='areaCode', 
+            right_on='code', 
+            how = 'left'
+            ).merge(df2[['code', 'name']], 
+            left_on='areaCode',
+            right_on='code',
+            how ='left'
+            ).merge(df1[['provinceCode', 'provinceName']],
+            left_on='provinceCode',
+            right_on='code',
+            how='left')
+
+common_joins = dict(right_on='code', how='left')
+common_columns = ['code', 'name']
+
+df= df5.merge(df4[common_columns],
+            left_on='provinceCode', 
+            **common_joins
+            ).merge(df3[common_columns], 
+            left_on='areaCode', 
+            **common_joins
+            ).merge(df2[common_columns], 
+            left_on='areaCode',
+            **common_joins
+            ).merge(df1[['provinceCode', 'provinceName']],
+            left_on='provinceCode',
+            **common_joins)
+",
+Consider a concatenation with merge which would translate your SQL query as OR is often analogous to a UNION:,,"OR
+UNION
+pd.concat([pd.merge(table_A, table_B, on='one'),
+           pd.merge(table_A, table_B, left_on='two', right_on='one')])
+",
+"One option would be to recreate one of the columns from table_A in table_B.I will flesh out a case. A is a DataFrame of first and last names, and you want to fill in each person's ""score.""  B is a DataFrame of scores with just one name associated - it could be the first or last.  We can use A to create a map for the ambiguous name column in B.",,"A = pd.DataFrame({'firstName': ['Adam', 'Bob', 'Charlie'],
+            'lastName': ['Axe', 'Button', 'Cobb']})
+
+# B's name column has two first names and one last name.
+B = pd.DataFrame({'name': ['Adam', 'Bob', 'Cobb'],
+                 'score': ['A', 'B', 'C']})
+
+# A mappable Series
+s = A.set_index('firstName').lastName  
+B['lastName'] = B.name.replace(s)  
+cols = ['lastName', 'score']
+A.merge(B[cols], on='lastName')
+",
+"You cannot have multiple colors in a label. If you want multiple colors, use a one-line Text widget, or use a canvas with a text item. Here's a quick and dirty example using a text widget. It doesn't do smooth scrolling, doesn't use any real data, and leaks memory since I never trim the text in the input widget, but it gives the general idea:",,"import Tkinter as tk
+import random
+
+class Example(tk.Frame):
+    def __init__(self, parent):
+        tk.Frame.__init__(self, parent)
+        self.ticker = tk.Text(height=1, wrap=""none"")
+        self.ticker.pack(side=""top"", fill=""x"")
+
+        self.ticker.tag_configure(""up"", foreground=""green"")
+        self.ticker.tag_configure(""down"", foreground=""red"")
+        self.ticker.tag_configure(""event"", foreground=""black"")
+
+        self.data = [""AAPL"", ""GOOG"", ""MSFT""]
+        self.after_idle(self.tick)
+
+    def tick(self):
+        symbol = self.data.pop(0)
+        self.data.append(symbol) 
+
+        n = random.randint(-1,1)
+        tag = {-1: ""down"", 0: ""even"", 1: ""up""}[n]
+
+        self.ticker.configure(state=""normal"")
+        self.ticker.insert(""end"", "" %s %s"" % (symbol, n), tag)
+        self.ticker.see(""end"")
+        self.ticker.configure(state=""disabled"")
+        self.after(1000, self.tick)
+
+if __name__ == ""__main__"":
+    root = tk.Tk()
+    Example(root).pack(fill=""both"", expand=True)
+    root.mainloop()
+",
+"To not loose the position when inserting prediction in the missing values you can use this approach, in example:To get the complete data merged in one pandas dataframe first get the known part together:If there is no missing value would do the job.",,"# merge train part of the data into a dataframe    
+X_train = X_train.sort_index()
+    y_train = y_train.sort_index()
+    result = pd.concat([X_train,X_test])
+
+# if need to convert numpy array to pandas series: 
+# prediction = pd.Series(prediction)
+
+
+# here is the magic
+result['specie'][result['specie'].isnull()] = prediction.values
+",
+"UPDATE:I've solved this with a relatively simple method, in which I converted the series to a list, and just set a new column in the dataframe equal to the list. However, I would be really curious to hear if others have better/different/unique solutions to this problem. Thanks!",,,
+"pandas
+pd.merge_asof + querynumpy
+np.searchsorted ",,"pandas
+pd.merge_asof
+query
+pd.merge_asof(
+    df.sort_values('ip_address'), df1,
+    left_on='ip_address', right_on='lower_bound_ip_address'
+).query('ip_address <= upper_bound_ip_address')[['ip_address', 'country']]
+
+numpy
+np.searchsorted
+b = df1.values[:, :2].ravel()
+c = df1.country.values
+ip = df.ip_address.values
+srch = b.searchsorted(ip) // 2
+mask = (ip >= b[0]) & (ip <= b[-1])
+df.loc[mask, 'country'] = c[srch[mask]]
+",
+"First of all, I assumed you've not repeated your strings correctly (like ""hi, this is an example line."" != ""hi, this is edited line."") by mistake, not on purpose (that I can't figure out).I named the accumulative file common.doc to distinct from the other .txt files in the target directory. Also, this example code implies all the files are in the same directory.And after common.doc editing:And a solution for multiline text (merging stays with .strip() removed on content writing), not suitable for hundreds of thousands of files tho...",,"common.doc
+.txt
+# merging.py
+import os
+import glob
+
+with open(""common.doc"", ""w"") as common:
+    for txt in glob.glob(""./*.txt""):
+        with open(txt, ""r"") as f:
+            content = f.read()
+        common.write(""{} ({})\n"".format(os.path.basename(txt), content))
+
+common.doc
+# splitting.py
+with open(""common.doc"", ""r"") as common:
+    for line in common:
+        name = line[:line.find("" ("")]
+        text = line[line.find("" ("")+2:line.rfind("")"")]
+        with open(name, ""w"") as f:
+            f.write(text)
+
+.strip()
+# splitting2.py
+with open(""common.doc"", ""r"") as common:
+    everything = common.read()
+elements = everything.split("")"")
+for elem in elements:
+    name = elem[:elem.find("" ("")].strip()
+    text = elem[elem.find("" ("")+2:]
+    if name:
+        with open(name, ""w"") as f:
+            f.write(text)
+",
+"pyvips can do exactly what you want very quickly and efficiently. For example:The access=""sequential"" option tells pyvips that you want to stream the image. It will only load pixels on demand as it generates output, so you can merge enormous images using only a little memory. The arrayjoin operator joins an array of images into a grid across tiles across. It has quite a few layout options: you can specify borders, overlaps, background, centring behaviour and so on.I can run it like this:So it joined 100 JPG images to make a 14,000 x 20,000 pixel mosaic in about 2.5s on this laptop, and from watching top, needed about 300mb of memory. I've used it to join over 30,000 images into a single file, and it would go higher. I've made images of over 300,000 by 300,000 pixels.The pyvips equivalent of PIL's paste is insert. You could use that too, though it won't work so well for very large numbers of images. There's also a command-line interface, so you could just enter:To join up a large set of JPG images.",https://pypi.org/project/pyvips/ https://libvips.github.io/libvips/API/current/libvips-conversion.html#vips-arrayjoin https://libvips.github.io/libvips/API/current/libvips-conversion.html#vips-insert,"import sys
+import pyvips
+
+images = [pyvips.Image.new_from_file(filename, access=""sequential"")
+          for filename in sys.argv[2:]]
+final = pyvips.Image.arrayjoin(images, across=10)
+final.write_to_file(sys.argv[1])
+
+access=""sequential""
+arrayjoin
+across
+$ for i in {1..100}; do cp ~/pics/k2.jpg $i.jpg; done
+$ time ../arrayjoin.py x.tif *.jpg 
+
+real    0m2.498s
+user    0m3.579s
+sys 0m1.054s
+$ vipsheader x.tif
+x.tif: 14500x20480 uchar, 3 bands, srgb, tiffload
+
+top
+paste
+insert
+vips arrayjoin ""${echo *.jpg}"" x.tif --across 10
+",
+"Ok, here's some working code. Is this roughly what you need?
+I'm not too happy with it yet, it looks a bit ugly imho but I want to know if it's the right direction.Output:",,"words = '''Some sentence that is spliced...
+and has a continuation.
+this cannot be confused by U.S.A.
+In that
+last sentence... 
+an abbreviation ended the sentence!'''.split()
+
+def format_sentence(words):
+    output = []
+
+    for word in words:
+        if word.endswith('...') or not word.endswith('.'):
+            output.append(word)
+            output.append(' ')
+        elif word.endswith('.'):
+            output.append(word)
+            output.append('\n')
+        else:
+            raise ValueError('Unexpected result from word: %r' % word)
+
+    return ''.join(output)
+
+print format_sentence(words)
+
+Some sentence that is spliced... and has a continuation.
+this cannot be confused by U.S.A.
+In that last sentence...  an abbreviation ended the sentence!
+",
