@@ -29,16 +29,16 @@ lemmatizer = WordNetLemmatizer()
 
 # %%
 #rel_que = pd.read_csv('../../../data/relevant_questions.csv')
-ans = pd.read_csv('../../../data/keyword_answer.csv')
-kdf = pd.read_csv('../../../data/keywords.csv')
+ans = pd.read_csv('../../data/keyword_answer.csv')
+kdf = pd.read_csv('../../data/keywords.csv')
 
 
 # %%
-df1 = pd.read_csv('../../../data/original_data1.csv')
-df2 = pd.read_csv('../../../data/original_data2.csv')
-df3 = pd.read_csv('../../../data/original_data3.csv')
-df4 = pd.read_csv('../../../data/original_data4.csv')
-df5 = pd.read_csv('../../../data/original_data5.csv')
+df1 = pd.read_csv('../../data/original_data1.csv')
+df2 = pd.read_csv('../../data/original_data2.csv')
+df3 = pd.read_csv('../../data/original_data3.csv')
+df4 = pd.read_csv('../../data/original_data4.csv')
+df5 = pd.read_csv('../../data/original_data5.csv')
 topics = ['Topic 0', 'Topic 1', 'Topic 2', 'Topic 3', 'Topic 4', 'Topic 5', 'Topic 6', 'Topic 7']
 
 
@@ -184,6 +184,7 @@ def ranking(query):
             cosc = cosine_score(topic_data.iloc[i]['question list'], topic_data.iloc[i]['answer list'])
             entro = entropy(topic_data.iloc[i]['answer list'], tfidf_dict)
             topic_df = topic_df.append(pd.Series([topic_data.iloc[i]['id'], topic_data.iloc[i]['answer'], topic_data.iloc[i]['link'], topic_data.iloc[i]['code'], topic_data.iloc[i]['score'], cosc, entro]), ignore_index=True)
+        print(topic_df)
         topic_df.columns = ['id','answer', 'link', 'code', 'score', 'cosine score', 'entropy']
         min_user_score = topic_df['score'].min()
         max_user_score = topic_df['score'].max()
@@ -204,9 +205,6 @@ def ranking(query):
         #topic_df.to_csv(path, index=False)
 
     return topics_data
-
-
-
 
 
 # %%
