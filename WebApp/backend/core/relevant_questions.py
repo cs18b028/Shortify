@@ -26,8 +26,6 @@ def question_to_vec(question, embeddings, dim = 300):
 
 def rel_que(query):
 
-    results = []
-
     # retrieving the save title embeddings
 
     em1 = pd.read_csv('../../models/title_embeddings1.csv')
@@ -41,9 +39,10 @@ def rel_que(query):
 
     # process the query
 
+    query = 'merge two lists in python'
     processed_query = process_text(query)
 
-    results_returned = 1000 # number of results to be returned
+    results_returned = 100 # number of results to be returned
 
     query_vect = np.array([question_to_vec(processed_query, w2v_model)]) # Vectorize the user query
 
@@ -51,11 +50,9 @@ def rel_que(query):
 
     relevant_questions = []
     max_cosine_score = max(cosine_similarities)
-    if max_cosine_score==0:
-        max_cosine_score = 1
 
-    cos_weight = 10
-    freq_weight = 80
+    cos_weight = 30
+    freq_weight = 60
     ans_weight = 6
     polar_weight = 2
     subj_weight = 2
@@ -68,31 +65,26 @@ def rel_que(query):
         word_count = 0
         score = 0
         
-        # modify for number of unique words
-
-        for word in str(data.title[index].lower()).split():
+        for word in data.processed_title[index].split():
             if word.lower() in processed_query:
                 freq_score+=1
             word_count+=1
             
         freq_score/=word_count
         
-        score =  (cos_weight*(cosine_score/max_cosine_score)+freq_weight*freq_score+ans_weight*data.score[index]+polar_weight*data.polarity[index]+subj_weight*data.subjectivity[index])
+        score =  (cos_weight*(cosine_score/max_cosine_score)+freq_weight*freq_score+ans_weight*data.score[index]+polar_weight*data.polarity[index]+subj_weight*data.subjectivity[index])/100
             
-        relevant_questions.append((data.id[index], data.title[index], score))
+        relevant_questions.append((index, data.id[index], data.title[index], score))
         
-    relevant_questions.sort(key = lambda x : x[2], reverse = True)
+        relevant_questions.sort(key = lambda x : x[3], reverse = True)
 
-    for index, title, score in relevant_questions:
-        results.append({
-            'index' : str(index),
-            'title' : title,
-            'similarity_score' : str(score)
-        })
+        df = pd.DataFrame(relevant_questions).iloc[:,1:]
+        df.columns = ['id','questions','score']
 
-    return results[0:1000]
+        print("hello")
+
+        return df
 
 def get_rel_que(query):
     results = rel_que(query)
-    print(results)
     return results

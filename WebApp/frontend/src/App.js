@@ -50,7 +50,7 @@ function App() {
         <Navbar bg="light" variant="light" style={{ margin: '5vh 10vw 0 10vw', borderRadius: '1rem' }}>
           <Navbar.Brand style={{ marginLeft: '1vw' }}><h3>Shortify</h3></Navbar.Brand>
           <Form inline onSubmit={handleSubmit}>
-            <FormControl type="text" placeholder="Search" value={query} onChange={(e) => setQuery(e.target.value)} style={{ width: '60vw', margin: '0 1vw' }}/>
+            <FormControl type="text" placeholder="Search" value={query} onChange={(e) => setQuery(e.target.value)} style={{ width: '56vw', margin: '0 1vw' }}/>
             <Button variant="outline-info">Search</Button>
           </Form>
         </Navbar>
