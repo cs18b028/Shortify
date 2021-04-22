@@ -131,8 +131,9 @@ def score(user_score, cosine_score, entropy_score, min_user_score, max_user_scor
 
 # %%
 def ranking(query):
-    query = text_process(query)
+
     rel_que = get_rel_que(query)
+    query = text_process(query)
 
     ans['ans length'] = ans['answer'].apply(length_text)
 
@@ -182,8 +183,8 @@ def ranking(query):
         for i in range(0, topic_data.shape[0]):
             cosc = cosine_score(topic_data.iloc[i]['question list'], topic_data.iloc[i]['answer list'])
             entro = entropy(topic_data.iloc[i]['answer list'], tfidf_dict)
-            topic_df = topic_df.append(pd.Series([topic_data.iloc[i]['answer'], topic_data.iloc[i]['link'], topic_data.iloc[i]['code'], topic_data.iloc[i]['score'], cosc, entro]), ignore_index=True)
-        topic_df.columns = ['answer', 'link', 'code', 'score', 'cosine score', 'entropy']
+            topic_df = topic_df.append(pd.Series([topic_data.iloc[i]['id'], topic_data.iloc[i]['answer'], topic_data.iloc[i]['link'], topic_data.iloc[i]['code'], topic_data.iloc[i]['score'], cosc, entro]), ignore_index=True)
+        topic_df.columns = ['id','answer', 'link', 'code', 'score', 'cosine score', 'entropy']
         min_user_score = topic_df['score'].min()
         max_user_score = topic_df['score'].max()
         min_cosine_score = topic_df['cosine score'].min()
@@ -198,8 +199,10 @@ def ranking(query):
         topic_df.sort_values(by = 'sc', ascending=False, inplace=True, kind='quicksort')
         topic_df = topic_df.head(15)
         topics_data.append(topic_df)
+        #print(topic_df)
         #path = 'data/'+ topic +'.csv'
         #topic_df.to_csv(path, index=False)
+
     return topics_data
 
 
