@@ -1,36 +1,184 @@
 answer,link,code,sc
-You can either use update:output:Or loc:output:,,"update
-Empty_DF.update(ROI_DF)
+"Your naive method sounds very reasonable; I think the time complexity of it is O(NM), where N is the number of intervals you're trying to resolve, and M is the the range over which you're trying to resolve them.  The difficulty you might have is that you also have space complexity of O(M), which might use up a fair bit of memory.Here's a method for merging without building a ""master list"", which may be faster; because it treats intervals as objects, complexity is no longer tied to M.I'll represent an interval (or list of intervals) as a set of tuples (a,b,p), each of which indicates the time points from a to b, inclusively, with the integer priority p (W can be 1, and S can be 2).  In each interval, it must be the case that a < b.  Higher priorities are preferred.We need a predicate to define the overlap between two intervals:When we find overlaps, we need to resolve them.  This method takes care of that, respecting priority:Finally, merge_intervals takes an iterable of intervals and joins them together until there are no more overlaps:I think this has worst-case time complexity of O(N^4), although the average case should be fast.  In any case, you may want to time this solution against your simpler method, to see what works better for your problem.As far as I can see, my merge_intervals works for your examples:To cover the case with blank (B) intervals, simply add another interval tuple which covers the whole range with priority 0: (1, M, 0):",,"(a,b,p)
+a
+b
+p
+W
+1
+S
+2
+a
+b
+def has_overlap(i1, i2):
+    '''Returns True if the intervals overlap each other.'''
+    (a1, b1, p1) = i1
+    (a2, b2, p2) = i2
+    A = (a1 - a2)
+    B = (b2 - a1)
+    C = (b2 - b1)
+    D = (b1 - a2)
+    return max(A * B, D * C, -A * D, B * -C) >= 0
 
-     a    b  c
-a  0.0  5.0  0
-b  1.0  6.0  0
-c  2.0  7.0  0
-d  0.0  0.0  0
-e  3.0  8.0  0
-f  0.0  0.0  0
+def join_intervals(i1, i2):
+    '''
+    Joins two intervals, fusing them if they are of the same priority,
+    and trimming the lower priority one if not.
 
-loc
-Empty_DF.loc[ROI_DF.index, ROI_DF.columns] = ROI_DF
+    Invariant: the interval(s) returned by this function will not
+    overlap each other.
 
-   a  b  c
-a  0  5  0
-b  1  6  0
-c  2  7  0
-d  0  0  0
-e  3  8  0
-f  0  0  0
-",
-You can put the different column into index and then concat them:Output:,,"pd.concat([plantsFrame.set_index(['plants']), fruitsFrame.set_index(['fruit'])])
+    >>> join_intervals((1,5,2), (4,8,2))
+    {(1, 8, 2)}
+    >>> join_intervals((1,5,2), (4,8,1))
+    {(1, 5, 2), (6, 8, 1)}
+    >>> join_intervals((1,3,2), (4,8,2))
+    {(1, 3, 2), (4, 8, 2)}
+    '''
+    if has_overlap(i1, i2):
+        (a1, b1, p1) = i1
+        (a2, b2, p2) = i2
+        if p1 == p2:
+            # UNION
+            return set([(min(a1, a2), max(b1, b2), p1)])
+        # DIFFERENCE
+        if p2 < p1:
+            (a1, b1, p1) = i2
+            (a2, b2, p2) = i1
+        retval = set([(a2, b2, p2)])
+        if a1 < a2 - 1:
+            retval.add((a1, a2 - 1, p1))
+        if b1 > b2 + 1:
+            retval.add((b2 + 1, b1, p1))
+        return retval
+    else:
+        return set([i1, i2])
 
-      run 1 run 2   run 3   max
-mint    12  22      1.3     22
-cactus  13  23      20.0    23
-papaya  22  21      21.0    22
-orange  20  2       2.0     20
-",
-"Your desired outputs are no longer really model serializers as for example you completely loose the relationships between materials and stores. You should instead consider building your own dictionary, then converting it to a custom json and just pass it as a response as explained here:
-https://stackoverflow.com/a/35019122/12197595",https://stackoverflow.com/a/35019122/12197595,,
+merge_intervals
+import itertools
+
+def merge_intervals(intervals):
+    '''Resolve overlaps in an iterable of interval tuples.'''
+    # invariant: retval contains no mutually overlapping intervals
+    retval = set()
+    for i in intervals:
+        # filter out the set of intervals in retval that overlap the
+        # new interval to add O(N)
+        overlaps = set([i2 for i2 in retval if has_overlap(i, i2)])
+        retval -= overlaps
+        overlaps.add(i)
+        # members of overlaps can potentially all overlap each other;
+        # loop until all overlaps are resolved O(N^3)
+        while True:
+            # find elements of overlaps which overlap each other O(N^2)
+            found = False
+            for i1, i2 in itertools.combinations(overlaps, 2):
+                if has_overlap(i1, i2):
+                    found = True
+                    break
+            if not found:
+                break
+            overlaps.remove(i1)
+            overlaps.remove(i2)
+            overlaps.update(join_intervals(i1, i2))
+        retval.update(overlaps)
+    return retval
+
+merge_intervals
+# example 1
+assert (merge_intervals({(5, 8, 2), (1, 5, 1), (7, 10, 1)}) ==
+        {(1, 4, 1), (5, 8, 2), (9, 10, 1)})
+
+# example 2
+assert (merge_intervals({(5, 8, 2), (2, 10, 1)}) ==
+        {(2, 4, 1), (5, 8, 2), (9, 10, 1)})
+
+0
+(1, M, 0)
+# example 3 (with B)
+assert (merge_intervals([(1, 2, 1), (5, 8, 2), (9, 10, 1),
+                         (16, 20, 2), (1, 20, 0)]) ==
+        {(1, 2, 1), (3, 4, 0), (5, 8, 2),
+         (9, 10, 1), (11, 15, 0), (16, 20, 2)})
+",1.6198320557407464
+"I think you need concat, but first set index of each DataFrame by common column:If need join by merge:",http://pandas.pydata.org/pandas-docs/stable/generated/pandas.concat.html http://pandas.pydata.org/pandas-docs/stable/generated/pandas.DataFrame.merge.html,"concat
+DataFrame
+dfs = [df.set_index('id') for df in dfList]
+print pd.concat(dfs, axis=1)
+
+merge
+from functools import reduce
+df = reduce(lambda df1,df2: pd.merge(df1,df2,on='id'), dfList)
+",1.464156612280205
+"I managed to do what you intended by changing your format. I convert all your sublists into dict with the key user.Because it easier to merge dict and the order of user in your sublists doesn't matter.The last steps is to iterate over the merged dict of list1 and list2 and do your special operation. As I understood, is to take the before last number of list1 and merge it with list2. Then you recreate your desired sublist.Output:EDITIt seems I make a mistake and your list1 have to check all the content of list2, in that case you should make a dict of list2 first and apply your specific condition after. eg:output:Note: we can get rid of defaultdict since the same key is not being to be added twice.",,"dict
+user
+user
+dict
+list1
+list2
+list1
+list2
+from itertools import chain
+from collections import defaultdict
+
+list1 = [['user1', 186, 'Feb 2017, Apr 2017', 550, 555], ['user2', 282, 'Mai 2017', 0, 3579], ['user3', 281, 'Mai 2017', 10, 60]]
+list2 = [['user1', 186, 'Feb 2017, Mar 2017, Mai 2017', 0, 740],['user2', 282, 'Feb 2017', 0, 1000], ['user4', 288, 'Feb 2017', 60, 10]]
+
+# Transform list to dict with key as 'userN'
+def to_dict(lst): return {x[0]: x[1:] for x in lst} 
+
+# Now create a dict that combined list of user1..N+1
+tmp_dict = defaultdict(list)
+for k, v in chain(to_dict(list1).items(), to_dict(list2).items()):
+  tmp_dict[k].append(v)
+
+desired_output = []
+for k, v in tmp_dict.items():
+  if len(v) == 2:
+    v[1][-2] = v[0][-2] # Take the before last of list1 to remplace with before last one of list2
+    desired_output.append([k] + v[1])
+  else:
+    desired_output.append([k] + v[0])
+
+print(desired_output)
+
+[['user1', 186, 'Feb 2017, Mar 2017, Mai 2017', 550, 740], ['user2', 282, 'Feb 2017', 0, 1000], ['user3', 281, 'Mai 2017', 10, 60], ['user4', 288, 'Feb 2017', 60, 10]]
+
+list1
+list2
+dict
+list2
+from itertools import chain
+
+list1 = [['user1', 186, 'Feb 2017, Apr 2017', 550, 555], ['user2', 282, 'Mai 2017', 0, 3579], ['user3', 281, 'Mai 2017', 10, 60]]
+list2 = [['user1', 186, 'Feb 2017, Mar 2017, Mai 2017', 0, 740],['user2', 282, 'Feb 2017', 0, 1000], ['user4', 288, 'Feb 2017', 60, 10]]
+
+# Transform list to dict with key as 'userN'
+def to_dict(lst): return {x[0]: x[1:] for x in lst} 
+
+# First, transfrom list2 to dict
+list2_dict = {}
+for k, v in to_dict(list2).items():
+  list2_dict[k] = v
+
+# Then iterate on list1 to compare
+desired_output = []
+for k, v in to_dict(list1).items():
+  if k in list2_dict: # key of list1 exists in list2
+    list2_dict[k][-2] = v[-2] # replace value
+    desired_output.append([k] + list2_dict[k]) # Then add list2
+    list2_dict.pop(k) # And remove it from old dict
+  else: # list1 does not exists in list2
+    v[-1] = 0 # Set last element to zero
+    desired_output.append([k] + v)
+
+for k, v in list2_dict.items(): # Now add elements present only in list2
+  desired_output.append([k] + v)
+
+print(desired_output)
+
+[['user1', 186, 'Feb 2017, Mar 2017, Mai 2017', 550, 740], ['user2', 282, 'Feb 2017', 0, 1000], ['user3', 281, 'Mai 2017', 10, 0], ['user4', 288, 'Feb 2017', 60, 10]]
+
+defaultdict",1.358343197869356
 "First off, don't feel bad as I had to test this to see why it doesn't work, and I wrote the thing.The merge() use case is one where you're taking some kind of in-application data, either from an offline cache or some locally modified structure, and moving it into a new Session.   merge() is mostly about merging changes, so when it sees attributes that have no ""change"", it assumes no special work is needed.   So it skips unloaded relationships.  If it did follow unloaded relationships, the merge process would become a very slow and burdensome operation as it traverses the full graph of relationships loading everything recursively, potentially loading a significant portion of the database into memory for a highly interlinked schema.  The ""copy from one database to another"" use case here was not anticipated.the data does go in if you just make sure all those edges are loaded ahead of time, here's a demo.   the default cascade is ""save-update, merge"" also so you don't have to specify that.",,"from sqlalchemy import create_engine, Column, String, Integer, ForeignKey
 from sqlalchemy.orm import Session, relationship, backref, immediateload
 from sqlalchemy.ext.declarative import declarative_base
@@ -102,49 +250,187 @@ def copy(source_session):
 teardown()
 source_session = fixture()
 copy(source_session)
-",
-So after working on this project I gained some more insight. I found a solution but was hoping for a cleaner one. But this works: we can concat the rows from the original dataframe which have ClockIndate.isnull:,,"cleaner
-ClockIndate.isnull
-df_merge = pd.merge(df1, df2, on=['Company', 'Resource'], how='left')
+",1.2469047895028076
+you can iterate through the distinct second element of both list combined:then you can decide to add to your desired list by looking up n in both list,,"for n in set([item[1] for item in list1+list2]):
+",1.078928164516463
+"You can do:to find the columns that the two df's have in common , then replace those in the first with the columns from the second.
+This will give you results for example given an initial A:and New_df:   And we wind up with  final 'A', with y column taken from New_df:",,"cols1=set(A.columns.tolist())
+cols2=set(New_df.columns.tolist())
+common_cols = list(cols1.intersection(cols2))
+A[common_cols]=New_df[common_cols]
 
-df_filter = df_merge[df_merge.ClockInDate.between(df_merge.EffectiveFrom, df_merge.EffectiveTo) | df_merge.EffectiveFrom.isnull()]
+   x  y     
+0  1  a
+1  2  b
+2  3  c
 
-df_final = pd.concat([df_filter, df1[df1.ClockInDate.isnull()]], sort=True)
+   z  y
+0  4  d
+1  5  e
+2  6  f
 
-print(df_final)
-  ClockInDate Company EffectiveFrom EffectiveTo Resource
-1  2019-02-09       A    2019-01-01  2099-12-31     ResA
-3  2019-02-09       A    2019-01-01  2099-12-31     ResB
-4  2019-02-09       A           NaT         NaT     ResC
-5  2019-02-09       B           NaT         NaT     ResD
-7  2019-02-09       B    2019-01-01  2099-12-31     ResE
-9  2019-02-09       B    2019-01-01  2099-12-31     ResF
-6         NaT       B           NaT         NaT     ResG
-",
-"That's the editor that is opened so that you can write the commit message. That means the merge went well, no conflicts. Just set the comment, save the file and quit and the merge revision should be done.",,,
-"IIUC, this is a case of pd.cut:Output:",,"pd.cut
-df1['label'] = pd.cut(df1['time'], 
-                      bins=list(df2['time'])+[np.inf], 
-                      labels=df2['label'])
+   x  y
+0  1  d
+1  2  e
+2  3  f
+",0.8841517558965752
+"Create a conditional to find if there is an overlap between the two frames, create new columns based on the conditionals, and merge, using how='outer'What I observed from the data is that if the overlap (end-start) in df_1 is greater than or equal to the overlap in df_2, then add start_data_2, otherwise, leave as is. The calculation hinges on that; if it is a false premise OP, do let me know.",,"#create overlap columns
 
-    time  speaker label
-0   0.25        1    10
-1   0.25        2    10
-2   0.50        1    10
-3   0.50        2    10
-4   0.75        1    10
-5   0.75        2    10
-6   1.00        1    10
-7   1.00        2    10
-8   1.25        1    11
-9   1.25        2    11
-10  1.50        1    11
-11  1.50        2    11
-12  1.75        1    11
-13  1.75        2    11
-14  2.00        1    11
-15  2.00        2    11
-",
+df_1['overlap']= df_1.end - df_1.start
+df_2['overlap']= df_2.end - df_2.start
+
+cond1 = df_1.overlap.ge(df_2.overlap)
+df_1['key'] = np.where(cond1, df_2.some_data_2,'n1')
+df_2['key'] = np.where(cond1, df_2.some_data_2,'n')
+
+(pd
+ .merge(df_1,df_2,
+        how='outer',
+        on='key',
+        suffixes = ('_1','_2'))
+ .drop(['key','overlap_1','overlap_2'],
+       axis=1)
+  )
+
+   start_1  end_1   some_data_1 start_2 end_2   some_data_2
+0   0.0     5.0        AA        0.0    5.0      AA_AA
+1   10.0    17.0       BB       12.0    17.0     BB_BB
+2   23.0    28.0       CC       23.0    25.0     CC_CC
+3   35.0    41.0       DD       NaN     NaN      NaN
+4   NaN     NaN        NaN      55.0    62.0     DD_DD
+",0.8535866155464169
+As you identified the problem is that merge_sort has no way of knowing the basis of sorting. You could change merge_sort to take in an additional parameter that returns the key for each element in the sequence just like sorted does:Then change the comparison to call passed function instead of comparing elements directly:And finally pass key to recursive calls:With these changes it will work as you expect:One thing to note though is that results are not identical with sorted since merge_sort is not stable:,https://docs.python.org/3/library/functions.html#sorted https://en.wikipedia.org/wiki/Sorting_algorithm#Stability,"merge_sort
+merge_sort
+sorted
+def merge_sort(seq, key=lambda x: x):
+
+if key(left[left_counter]) < key(right[right_counter]):
+    seq[master_counter] = left[left_counter]
+    left_counter += 1
+else:
+    seq[master_counter] = right[right_counter]
+    right_counter += 1
+
+left  = merge_sort( seq[:mid_index], key )
+right = merge_sort( seq[mid_index:], key )
+
+merge_sort([4, 6, 2, 1]) # [1, 2, 4, 6]
+merge_sort(['foo', 'a', 'bar', 'foobar'], key=len) # ['a', 'bar', 'foo', 'foobar']
+
+sorted
+merge_sort
+merge_sort(['foo', 'a', 'bar', 'foobar'], key=len) # ['a', 'bar', 'foo', 'foobar']
+sorted(['foo', 'a', 'bar', 'foobar'], key=len) # ['a', 'foo', 'bar', 'foobar']
+",0.8457981670337509
+"Upon review, the real reason the timestamp did not display after the merge is that the only rows that were selected in the merge had 00:00:00 for a timestamp. Hence, this time is assumed and not explicitly displayed. ",,,0.8057109915646423
+You can do it like this:Since you are adding the list the merged list will contains all values from abc but not in the correct order.That's why I used .sort() to sort the list,,"a = [0, 3, 6, 9]
+b = [1, 4, 7, 10]
+c = [2, 5, 8, 11]
+merged=a+b+c
+merged.sort()
+",0.7886704162142535
+"If I understand correctly, you want to recursively merge the nodes until there is no overlap between the edges. My idea was to start with a fully connected graph and ""recursively"" merge the nodes. Here is a 'fake' recursive implementation. EDIT: I'm not too sure why networkx is necessary here, it could be done with just dicts (maybe more clear). ",https://i.stack.imgur.com/7rS6L.png,"import networkx as nx
+
+# file you provided
+with open('temp.txt', 'r') as f:
+    lines = f.readlines()
+
+
+
+nodes = {}
+for idx, line in enumerate(lines):
+    authors, title, venue = line.split('<>')[1:4]
+    authors = set(authors.split(','))
+    nodes[idx] = dict(authors = authors, title = (title, ))
+
+G = nx.complete_graph(len(nodes))
+nx.set_node_attributes(G, nodes)
+
+
+def merge_recursive(G, target = 'authors'):
+    """"""
+    Keeps merging if there is overlap between nodes
+    """"""
+    # check edges
+    while G.edges():
+        for (i, j) in G.edges():
+            overlap = G.nodes()[i][target].intersection(G.nodes()[j][target])
+            # copy values
+            if overlap:
+                tmp = {}
+                for k, v in G.nodes()[i].items():
+                    if isinstance(v, set):
+                        tmp[k] = v.union(G.nodes()[j][k])
+                    else:
+                        tmp[k] = v + G.nodes()[j][k]
+
+                nx.set_node_attributes(G, {i: tmp})
+                G.remove_node(j)
+            # no overlap remove edge
+            else:
+                G.remove_edge(i, j)
+            break
+    return G
+
+merged = merge_recursive(G.copy())
+
+from matplotlib.pyplot import subplots
+
+fig, (left, right) = subplots(1, 2, figsize = (10,  5))
+nx.draw(G, ax = left, with_labels = 1)
+nx.draw(merged, ax = right, with_labels = 1)
+
+left.set_title('Before merging')
+right.set_title('After merging')
+fig.show()
+",0.7650586043834964
+"You should know the shape of returned array. Suppose, myArray.shape = (2, 4)
+Then",,"allArrays = np.empty((0, 4))
+for x in range(0, 1000):
+    myArray = myFunction(x)
+    allArrays = np.append(allArrays, myArray, axis = 0)
+",0.7608925838761982
+"Your doing a ton of work to put a <table> tag into a table. Let pandas do that for you (it uses BeautifulSoup under the hood). Then to merge, there's 2 ways you can do it:1) Make one of the dataframes only have what is not contained in the other (However, keep columns that you will do the merge on).2) Drop columns from the second dataframe that are in the dataframe (again, make sure to not drop the columns you will do the merge on.OR",,"<table>
+import pandas as pd
+
+def scrape_data(url):
+    stats = pd.read_html(url)[0]
+    return stats
+
+
+df1 = scrape_data(""https://basketball-reference.com/leagues/NBA_2020_advanced.html"")
+df1 = df1[df1['Rk'] != 'Rk']
+
+df2 = scrape_data(""https://basketball-reference.com/leagues/NBA_2020_per_poss.html"")
+df2 = df2[df2['Rk'] != 'Rk']
+
+uniqueCols = [ col for col in df2.columns if col not in df1.columns ]
+
+# Below will do the same as above line
+#uniqueCols = list(df2.columns.difference(df1.columns))
+
+df2 = df2[uniqueCols + ['Player', 'Tm']]
+
+df = df1.merge(df2, how='left', on=['Player', 'Tm'])
+
+import pandas as pd
+
+def scrape_data(url):
+    stats = pd.read_html(url)[0]
+    return stats
+
+
+df1 = scrape_data(""https://basketball-reference.com/leagues/NBA_2020_advanced.html"")
+df1 = df1[df1['Rk'] != 'Rk']
+
+df2 = scrape_data(""https://basketball-reference.com/leagues/NBA_2020_per_poss.html"")
+df2 = df2[df2['Rk'] != 'Rk']
+
+dropCols = [ col for col in df1.columns if col in df2.columns and col not in ['Player','Tm']]
+df2 = df2.drop(dropCols, axis=1)
+
+df = df1.merge(df2, how='left', on=['Player', 'Tm'])
+",0.7478494343130555
 "You could create a dataframe out of the list of tuples, and then merge twice. e.g.",,"# Create df from list of tuples
 tuple_df = pd.DataFrame(list_of_couples, columns=['a', 'b'])
 
@@ -162,112 +448,17 @@ merged = merged.drop(['a','b'], axis=1)
   col_a col_b col_c col_d
 0     1     2     9     8
 1     1     1     3     3
-",
-I would try to create a temporary key to join on:Output:,,"#unzip list_of_couples into index for table_a and table_b
-a, b  = zip(*list_of_couples)
+",0.7458806288100425
+"Using pandas:To get rid of duplicate rows as well:This will not get rid of duplicates as the dataframe is created, but after. So a dataframe gets created by concatenating all of the files. Then it is de-duplicated. The final dataframe can then be saved to csv.",,"import pandas as pd
 
-#Loop on length of index to assign same value of key to each table for the appropriate index
-for i in range(len(a)):
-    df_a.loc[a[i], 'key'] = i
-    df_b.loc[b[i], 'key'] = i
+interesting_files = glob.glob(""/home/tcs/PYTHONMAP/test1/*.csv"") 
+df = pd.concat((pd.read_csv(f, header = 0) for f in interesting_files))
+df.to_csv(""output.csv"")
 
-#merge dataframes on 'key', remove NaN records and drop temporary 'key' column
-df_a.merge(df_b, on='key').dropna(subset=['key']).drop('key', axis=1)
+import pandas as pd
 
-   col_a  col_b  col_c  col_d
-0      1      2      9      8
-5      1      1      3      3
-",
-"I am not sure how your data is structured however, it seems you want certain attributes form excel2 in excel1.. This will merge on the column specified.",,"excel1.merge(excel2, left_on='No.')
-",
-"Updated answer courtesy @OP:(Old Answer - don't use)You don’t have to create a variation each circle. Chain them:Update: Reduce is awesome in simplicity and speed, but for readability, it is less readable compared to mergers: We could DRY the code:",,"dfs = [df1, df2, df3, df4, df5] 
-from functools import partial 
-outer_merge = partial(pd.merge, how='outer') 
-reduce(outer_merge, dfs)
-
- df= df5.merge(df4[['code', 'name']],
-            left_on='provinceCode', 
-            right_on='code', 
-            how='left'
-            ).merge(df3[['code', 'name']], 
-            left_on='areaCode', 
-            right_on='code', 
-            how = 'left'
-            ).merge(df2[['code', 'name']], 
-            left_on='areaCode',
-            right_on='code',
-            how ='left'
-            ).merge(df1[['provinceCode', 'provinceName']],
-            left_on='provinceCode',
-            right_on='code',
-            how='left')
-
-common_joins = dict(right_on='code', how='left')
-common_columns = ['code', 'name']
-
-df= df5.merge(df4[common_columns],
-            left_on='provinceCode', 
-            **common_joins
-            ).merge(df3[common_columns], 
-            left_on='areaCode', 
-            **common_joins
-            ).merge(df2[common_columns], 
-            left_on='areaCode',
-            **common_joins
-            ).merge(df1[['provinceCode', 'provinceName']],
-            left_on='provinceCode',
-            **common_joins)
-",
-Consider a concatenation with merge which would translate your SQL query as OR is often analogous to a UNION:,,"OR
-UNION
-pd.concat([pd.merge(table_A, table_B, on='one'),
-           pd.merge(table_A, table_B, left_on='two', right_on='one')])
-",
-"One option would be to recreate one of the columns from table_A in table_B.I will flesh out a case. A is a DataFrame of first and last names, and you want to fill in each person's ""score.""  B is a DataFrame of scores with just one name associated - it could be the first or last.  We can use A to create a map for the ambiguous name column in B.",,"A = pd.DataFrame({'firstName': ['Adam', 'Bob', 'Charlie'],
-            'lastName': ['Axe', 'Button', 'Cobb']})
-
-# B's name column has two first names and one last name.
-B = pd.DataFrame({'name': ['Adam', 'Bob', 'Cobb'],
-                 'score': ['A', 'B', 'C']})
-
-# A mappable Series
-s = A.set_index('firstName').lastName  
-B['lastName'] = B.name.replace(s)  
-cols = ['lastName', 'score']
-A.merge(B[cols], on='lastName')
-",
-"UPDATE:I've solved this with a relatively simple method, in which I converted the series to a list, and just set a new column in the dataframe equal to the list. However, I would be really curious to hear if others have better/different/unique solutions to this problem. Thanks!",,,
-"This include two problem, 1 multiple dataframes merge, 2 duplicated key mergeNotice name here we can always modify by renameMethod 2 from cancat not consider the key one merge with index",,"merge
-def multikey(x): 
-    return x.assign(key=x.groupby('Color').cumcount())
-
-#we use groupby and cumcount create the addtional key
-
-from functools import reduce
-
-#then use reduce
-
-df = reduce(lambda left,right: 
-            pd.merge(left,right,on=['Color','key'],how='outer'), 
-            list(map(multikey, [df1,df2,df3])))
-df
-  Color      date_x  key      date_y      date
-0     A      2011.0    0      2013.0      2011
-1     B    201411.0    0  20151111.0    201411
-2     C  20151231.0    0    201101.0  20151231
-3     A      2019.0    1         NaN      2019
-4     Y         NaN    0         NaN  20070212
-
-rename
-cancat
-s=pd.concat([df1,df2,df3],keys=['df1','df2','df3'], axis=1)
-s.columns=s.columns.map('_'.join)
-s=s.filter(like='_date')
-s
-     df1_date    df2_date  df3_date
-0      2011.0      2013.0      2011
-1    201411.0  20151111.0    201411
-2  20151231.0    201101.0  20151231
-3      2019.0         NaN      2019
-4         NaN         NaN  20070212
-",
+interesting_files = glob.glob(""/home/tcs/PYTHONMAP/test1/*.csv"") 
+df = pd.concat((pd.read_csv(f, header = 0) for f in interesting_files))
+df_deduplicated = df.drop_duplicates()
+df_deduplicated.to_csv(""output.csv"")
+",0.7360193951542162
