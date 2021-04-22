@@ -4,7 +4,6 @@ from gensim.models import Word2Vec
 from sklearn.metrics.pairwise import cosine_similarity
 from .process_data import process_text
 
-
 data = pd.read_csv('../../data/processed_data_model1.csv')
 
 w2v_model = Word2Vec.load('../../models/related_questions_model.bin')
@@ -95,4 +94,5 @@ def rel_que(query):
 
 def get_rel_que(query):
     results = rel_que(query)
+    print(results)
     return results

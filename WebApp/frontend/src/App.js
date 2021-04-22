@@ -6,7 +6,6 @@ import Form from 'react-bootstrap/Form';
 import FormControl from 'react-bootstrap/FormControl';
 import Navbar from 'react-bootstrap/Navbar';
 import Card from 'react-bootstrap/Card';
-import Container from 'react-bootstrap/Container';
 
 function App() {
 
@@ -37,7 +36,7 @@ function App() {
 
   var renderResults = searchresults.map((result, i) => {
     return (
-      <div>
+      <div key={result.index}>
         <div className="col-12 col-md-10">
           <h1>{result.title}</h1>
           <h4>Similarity Score: {result.similarity_score}</h4>
