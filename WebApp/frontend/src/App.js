@@ -1,7 +1,12 @@
-import React, { useState} from 'react';
+import React, { useState } from 'react';
 import axios from 'axios';
 import './App.css';
-import { Card } from 'react-bootstrap';
+import Button from 'react-bootstrap/Button';
+import Form from 'react-bootstrap/Form';
+import FormControl from 'react-bootstrap/FormControl';
+import Navbar from 'react-bootstrap/Navbar';
+import Card from 'react-bootstrap/Card';
+import Container from 'react-bootstrap/Container';
 
 function App() {
 
@@ -43,16 +48,16 @@ function App() {
 
   return (
     <div>
-      <div className="container">
-        <Card>
-          <Card.Body>
-            <form className="form-group" onSubmit={handleSubmit}>
-              <input type="text" className="form-control" value={query} placeholder="Search Query" onChange={(e) => setQuery(e.target.value)} />
-            </form>
-            {renderResults}
-          </Card.Body>
+        <Navbar bg="light" variant="light" style={{ margin: '5vh 10vw 0 10vw', borderRadius: '1rem' }}>
+          <Navbar.Brand style={{ marginLeft: '1vw' }}><h3>Shortify</h3></Navbar.Brand>
+          <Form inline onSubmit={handleSubmit}>
+            <FormControl type="text" placeholder="Search" value={query} onChange={(e) => setQuery(e.target.value)} style={{ width: '60vw', margin: '0 1vw' }}/>
+            <Button variant="outline-info">Search</Button>
+          </Form>
+        </Navbar>
+        <Card style={{ margin: '5vh 10vw 0 10vw', borderRadius: '1rem' }}>
+          {renderResults}
         </Card>
-      </div>
     </div>
   );
 }
