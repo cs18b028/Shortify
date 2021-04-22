@@ -1,6 +1,13 @@
 answer,link,code,sc
-"Your desired outputs are no longer really model serializers as for example you completely loose the relationships between materials and stores. You should instead consider building your own dictionary, then converting it to a custom json and just pass it as a response as explained here:
-https://stackoverflow.com/a/35019122/12197595",https://stackoverflow.com/a/35019122/12197595,,
+"You'll have to learn how templating works. Read this page on the docs to learn more: http://www.tornadoweb.org/en/stable/guide/templates.html#template-syntax After that, you can find the complete template syntax reference on this page: http://www.tornadoweb.org/en/stable/template.html#syntax-referenceAnyway, you can ""merge"" two templates and render them as one by using the {% include %} template tag. Example:Your Home1.html template should look roughly like this:Then render only the Home1.html from your request handler.This answer is far from perfect. You'll have to invest some time to actually learn about templates.",http://www.tornadoweb.org/en/stable/guide/templates.html#template-syntax http://www.tornadoweb.org/en/stable/template.html#syntax-reference,"{% include %}
+Home1.html
+<html>
+    <!-- do something -->
+    {% include 'Home2.html' %}
+    <!-- do something else -->
+</html>
+
+Home1.html",2.0
 "I am assuming you want to create comment and reply(re-comment) on particular comment on detail page of Post model.You can create a View inspite of creating a CreateView for  CommentCreateView and ReCommentCreateView class and override post methodNow send ReCommentCreateForm and CommentCreateForm in context data of your DetailView class.In your comment.html you can use both variable to render form.Update your urls for all views like below.Access your post detail page using:
   http://localhost:8000/polls/post/1/",,"Post
 View
@@ -63,22 +70,7 @@ urlpatterns = [
     path('recomment/<int:comment_pk>/', views.ReCommentCreateView.as_view(), name='recomment'),
 ]
 
-http://localhost:8000/polls/post/1/",
-"I assume you already had an object for company in current page, getting the employees is really easy:Django doc about OneToOneField.",https://docs.djangoproject.com/en/1.9/topics/db/examples/one_to_one/,"company
-employees = Employee.objects.filter(company=company)
-for employee in employees:
-    print employee.employeeprofile.first_name
-    print employee.employeeprofile.last_name
-    print employee.employeejob.employment_status
-    print employee.employeejob.employee_type
-",
-"do you have a views.py which serves these models? you could easily use the django render function to serve all three of these models to the dom. this is a rather comprehensive, all encompassing process but I'd be more than happy to assist you ",https://docs.djangoproject.com/en/1.9/topics/http/shortcuts/#render,,
-"A way you could do it and which would result in cleaner code in to define a function that takes two JSON objects and return the combination of those two.Then, after you have output_list:Result will be the object you are looking for.If you're not familiar with the reduce function, check out this web page: http://book.pythontips.com/en/latest/map_filter.htmlIt briefly explains the usage of reduce, as well as map and filter. They are very useful.",http://book.pythontips.com/en/latest/map_filter.html,"def merge (json_obj_1, json_obj_2):
-    items = json_obj_1['items'] + json_obj_2['items']
-    return { 'items': items }
-
-result = reduce(merge, output_list)
-",
+http://localhost:8000/polls/post/1/",1.6404477251611909
 Verified solution (using heapq.merge):Prints:On leetcode it was classified as Success (link):,https://docs.python.org/3.8/library/heapq.html#heapq.merge https://leetcode.com/submissions/detail/289269685/ https://i.stack.imgur.com/2A4zb.png,"heapq.merge
 from heapq import merge
 
@@ -142,13 +134,21 @@ print_list(new_list_node)
 4
 4
 
-leetcode",
-"You'll have to learn how templating works. Read this page on the docs to learn more: http://www.tornadoweb.org/en/stable/guide/templates.html#template-syntax After that, you can find the complete template syntax reference on this page: http://www.tornadoweb.org/en/stable/template.html#syntax-referenceAnyway, you can ""merge"" two templates and render them as one by using the {% include %} template tag. Example:Your Home1.html template should look roughly like this:Then render only the Home1.html from your request handler.This answer is far from perfect. You'll have to invest some time to actually learn about templates.",http://www.tornadoweb.org/en/stable/guide/templates.html#template-syntax http://www.tornadoweb.org/en/stable/template.html#syntax-reference,"{% include %}
-Home1.html
-<html>
-    <!-- do something -->
-    {% include 'Home2.html' %}
-    <!-- do something else -->
-</html>
+leetcode",1.0882023354830772
+"do you have a views.py which serves these models? you could easily use the django render function to serve all three of these models to the dom. this is a rather comprehensive, all encompassing process but I'd be more than happy to assist you ",https://docs.djangoproject.com/en/1.9/topics/http/shortcuts/#render,,0.7216605972884893
+"A way you could do it and which would result in cleaner code in to define a function that takes two JSON objects and return the combination of those two.Then, after you have output_list:Result will be the object you are looking for.If you're not familiar with the reduce function, check out this web page: http://book.pythontips.com/en/latest/map_filter.htmlIt briefly explains the usage of reduce, as well as map and filter. They are very useful.",http://book.pythontips.com/en/latest/map_filter.html,"def merge (json_obj_1, json_obj_2):
+    items = json_obj_1['items'] + json_obj_2['items']
+    return { 'items': items }
 
-Home1.html",
+result = reduce(merge, output_list)
+",0.6663406740542659
+"I assume you already had an object for company in current page, getting the employees is really easy:Django doc about OneToOneField.",https://docs.djangoproject.com/en/1.9/topics/db/examples/one_to_one/,"company
+employees = Employee.objects.filter(company=company)
+for employee in employees:
+    print employee.employeeprofile.first_name
+    print employee.employeeprofile.last_name
+    print employee.employeejob.employment_status
+    print employee.employeejob.employee_type
+",0.5991824597670452
+"Your desired outputs are no longer really model serializers as for example you completely loose the relationships between materials and stores. You should instead consider building your own dictionary, then converting it to a custom json and just pass it as a response as explained here:
+https://stackoverflow.com/a/35019122/12197595",https://stackoverflow.com/a/35019122/12197595,,0.48331294557661586
