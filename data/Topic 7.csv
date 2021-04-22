@@ -1,0 +1,273 @@
+answer,link,code,sc
+You can either use update:output:Or loc:output:,,"update
+Empty_DF.update(ROI_DF)
+
+     a    b  c
+a  0.0  5.0  0
+b  1.0  6.0  0
+c  2.0  7.0  0
+d  0.0  0.0  0
+e  3.0  8.0  0
+f  0.0  0.0  0
+
+loc
+Empty_DF.loc[ROI_DF.index, ROI_DF.columns] = ROI_DF
+
+   a  b  c
+a  0  5  0
+b  1  6  0
+c  2  7  0
+d  0  0  0
+e  3  8  0
+f  0  0  0
+",
+You can put the different column into index and then concat them:Output:,,"pd.concat([plantsFrame.set_index(['plants']), fruitsFrame.set_index(['fruit'])])
+
+      run 1 run 2   run 3   max
+mint    12  22      1.3     22
+cactus  13  23      20.0    23
+papaya  22  21      21.0    22
+orange  20  2       2.0     20
+",
+"Your desired outputs are no longer really model serializers as for example you completely loose the relationships between materials and stores. You should instead consider building your own dictionary, then converting it to a custom json and just pass it as a response as explained here:
+https://stackoverflow.com/a/35019122/12197595",https://stackoverflow.com/a/35019122/12197595,,
+"First off, don't feel bad as I had to test this to see why it doesn't work, and I wrote the thing.The merge() use case is one where you're taking some kind of in-application data, either from an offline cache or some locally modified structure, and moving it into a new Session.   merge() is mostly about merging changes, so when it sees attributes that have no ""change"", it assumes no special work is needed.   So it skips unloaded relationships.  If it did follow unloaded relationships, the merge process would become a very slow and burdensome operation as it traverses the full graph of relationships loading everything recursively, potentially loading a significant portion of the database into memory for a highly interlinked schema.  The ""copy from one database to another"" use case here was not anticipated.the data does go in if you just make sure all those edges are loaded ahead of time, here's a demo.   the default cascade is ""save-update, merge"" also so you don't have to specify that.",,"from sqlalchemy import create_engine, Column, String, Integer, ForeignKey
+from sqlalchemy.orm import Session, relationship, backref, immediateload
+from sqlalchemy.ext.declarative import declarative_base
+import os
+
+Base = declarative_base()
+
+class Person(Base):
+    __tablename__ = ""people""
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+
+    def __init__(self, name):
+        self.name = name
+
+
+class Edge(Base):
+    __tablename__ = ""edges""
+    id = Column(Integer, primary_key=True)
+    kid_id = Column(Integer, ForeignKey(""people.id""))
+    parent_id = Column(Integer, ForeignKey(""people.id""))
+    kid = relationship(""Person"", primaryjoin=""Edge.kid_id==Person.id"",
+                       backref=backref(""parent_edges"",
+                                       collection_class=set))
+    parent = relationship(""Person"", primaryjoin=""Edge.parent_id==Person.id"",
+                          backref=backref(""kid_edges"",
+                                          collection_class=set))
+
+    def __init__(self, kid, parent):
+        self.kid = kid
+        self.parent = parent
+
+def teardown():
+    for path in (""in.db"", ""out.db""):
+        if os.path.exists(path):
+            os.remove(path)
+
+def fixture():
+    engine = create_engine(""sqlite:///in.db"", echo=True)
+    Base.metadata.create_all(engine)
+
+    s = Session(engine)
+    p1, p2, p3, p4, p5 = [Person('p%d' % i) for i in xrange(1, 6)]
+    Edge(p1, p2)
+    Edge(p1, p3)
+    Edge(p4, p3)
+    Edge(p5, p2)
+    s.add_all([
+        p1, p2, p3, p4, p5
+    ])
+    s.commit()
+    return s
+
+def copy(source_session):
+    engine = create_engine(""sqlite:///out.db"", echo=True)
+    Base.metadata.create_all(engine)
+
+    s = Session(engine)
+    for person in source_session.query(Person).\
+            options(immediateload(Person.parent_edges),
+                        immediateload(Person.kid_edges)):
+        s.merge(person)
+
+    s.commit()
+
+    assert s.query(Person).count() == 5
+    assert s.query(Edge).count() == 4
+
+teardown()
+source_session = fixture()
+copy(source_session)
+",
+So after working on this project I gained some more insight. I found a solution but was hoping for a cleaner one. But this works: we can concat the rows from the original dataframe which have ClockIndate.isnull:,,"cleaner
+ClockIndate.isnull
+df_merge = pd.merge(df1, df2, on=['Company', 'Resource'], how='left')
+
+df_filter = df_merge[df_merge.ClockInDate.between(df_merge.EffectiveFrom, df_merge.EffectiveTo) | df_merge.EffectiveFrom.isnull()]
+
+df_final = pd.concat([df_filter, df1[df1.ClockInDate.isnull()]], sort=True)
+
+print(df_final)
+  ClockInDate Company EffectiveFrom EffectiveTo Resource
+1  2019-02-09       A    2019-01-01  2099-12-31     ResA
+3  2019-02-09       A    2019-01-01  2099-12-31     ResB
+4  2019-02-09       A           NaT         NaT     ResC
+5  2019-02-09       B           NaT         NaT     ResD
+7  2019-02-09       B    2019-01-01  2099-12-31     ResE
+9  2019-02-09       B    2019-01-01  2099-12-31     ResF
+6         NaT       B           NaT         NaT     ResG
+",
+"That's the editor that is opened so that you can write the commit message. That means the merge went well, no conflicts. Just set the comment, save the file and quit and the merge revision should be done.",,,
+"IIUC, this is a case of pd.cut:Output:",,"pd.cut
+df1['label'] = pd.cut(df1['time'], 
+                      bins=list(df2['time'])+[np.inf], 
+                      labels=df2['label'])
+
+    time  speaker label
+0   0.25        1    10
+1   0.25        2    10
+2   0.50        1    10
+3   0.50        2    10
+4   0.75        1    10
+5   0.75        2    10
+6   1.00        1    10
+7   1.00        2    10
+8   1.25        1    11
+9   1.25        2    11
+10  1.50        1    11
+11  1.50        2    11
+12  1.75        1    11
+13  1.75        2    11
+14  2.00        1    11
+15  2.00        2    11
+",
+"You could create a dataframe out of the list of tuples, and then merge twice. e.g.",,"# Create df from list of tuples
+tuple_df = pd.DataFrame(list_of_couples, columns=['a', 'b'])
+
+# Merge table_a with tuples
+merged = pd.merge(table_a, tuple_df, left_index=True, right_on='a')
+
+# Merge result with table_b
+merged = pd.merge(merged, table_b, right_index=True, left_on='b')
+
+# Removing intermediate join columns
+merged = merged.drop(['a','b'], axis=1)
+
+>>> print(merged)
+
+  col_a col_b col_c col_d
+0     1     2     9     8
+1     1     1     3     3
+",
+I would try to create a temporary key to join on:Output:,,"#unzip list_of_couples into index for table_a and table_b
+a, b  = zip(*list_of_couples)
+
+#Loop on length of index to assign same value of key to each table for the appropriate index
+for i in range(len(a)):
+    df_a.loc[a[i], 'key'] = i
+    df_b.loc[b[i], 'key'] = i
+
+#merge dataframes on 'key', remove NaN records and drop temporary 'key' column
+df_a.merge(df_b, on='key').dropna(subset=['key']).drop('key', axis=1)
+
+   col_a  col_b  col_c  col_d
+0      1      2      9      8
+5      1      1      3      3
+",
+"I am not sure how your data is structured however, it seems you want certain attributes form excel2 in excel1.. This will merge on the column specified.",,"excel1.merge(excel2, left_on='No.')
+",
+"Updated answer courtesy @OP:(Old Answer - don't use)You don’t have to create a variation each circle. Chain them:Update: Reduce is awesome in simplicity and speed, but for readability, it is less readable compared to mergers: We could DRY the code:",,"dfs = [df1, df2, df3, df4, df5] 
+from functools import partial 
+outer_merge = partial(pd.merge, how='outer') 
+reduce(outer_merge, dfs)
+
+ df= df5.merge(df4[['code', 'name']],
+            left_on='provinceCode', 
+            right_on='code', 
+            how='left'
+            ).merge(df3[['code', 'name']], 
+            left_on='areaCode', 
+            right_on='code', 
+            how = 'left'
+            ).merge(df2[['code', 'name']], 
+            left_on='areaCode',
+            right_on='code',
+            how ='left'
+            ).merge(df1[['provinceCode', 'provinceName']],
+            left_on='provinceCode',
+            right_on='code',
+            how='left')
+
+common_joins = dict(right_on='code', how='left')
+common_columns = ['code', 'name']
+
+df= df5.merge(df4[common_columns],
+            left_on='provinceCode', 
+            **common_joins
+            ).merge(df3[common_columns], 
+            left_on='areaCode', 
+            **common_joins
+            ).merge(df2[common_columns], 
+            left_on='areaCode',
+            **common_joins
+            ).merge(df1[['provinceCode', 'provinceName']],
+            left_on='provinceCode',
+            **common_joins)
+",
+Consider a concatenation with merge which would translate your SQL query as OR is often analogous to a UNION:,,"OR
+UNION
+pd.concat([pd.merge(table_A, table_B, on='one'),
+           pd.merge(table_A, table_B, left_on='two', right_on='one')])
+",
+"One option would be to recreate one of the columns from table_A in table_B.I will flesh out a case. A is a DataFrame of first and last names, and you want to fill in each person's ""score.""  B is a DataFrame of scores with just one name associated - it could be the first or last.  We can use A to create a map for the ambiguous name column in B.",,"A = pd.DataFrame({'firstName': ['Adam', 'Bob', 'Charlie'],
+            'lastName': ['Axe', 'Button', 'Cobb']})
+
+# B's name column has two first names and one last name.
+B = pd.DataFrame({'name': ['Adam', 'Bob', 'Cobb'],
+                 'score': ['A', 'B', 'C']})
+
+# A mappable Series
+s = A.set_index('firstName').lastName  
+B['lastName'] = B.name.replace(s)  
+cols = ['lastName', 'score']
+A.merge(B[cols], on='lastName')
+",
+"UPDATE:I've solved this with a relatively simple method, in which I converted the series to a list, and just set a new column in the dataframe equal to the list. However, I would be really curious to hear if others have better/different/unique solutions to this problem. Thanks!",,,
+"This include two problem, 1 multiple dataframes merge, 2 duplicated key mergeNotice name here we can always modify by renameMethod 2 from cancat not consider the key one merge with index",,"merge
+def multikey(x): 
+    return x.assign(key=x.groupby('Color').cumcount())
+
+#we use groupby and cumcount create the addtional key
+
+from functools import reduce
+
+#then use reduce
+
+df = reduce(lambda left,right: 
+            pd.merge(left,right,on=['Color','key'],how='outer'), 
+            list(map(multikey, [df1,df2,df3])))
+df
+  Color      date_x  key      date_y      date
+0     A      2011.0    0      2013.0      2011
+1     B    201411.0    0  20151111.0    201411
+2     C  20151231.0    0    201101.0  20151231
+3     A      2019.0    1         NaN      2019
+4     Y         NaN    0         NaN  20070212
+
+rename
+cancat
+s=pd.concat([df1,df2,df3],keys=['df1','df2','df3'], axis=1)
+s.columns=s.columns.map('_'.join)
+s=s.filter(like='_date')
+s
+     df1_date    df2_date  df3_date
+0      2011.0      2013.0      2011
+1    201411.0  20151111.0    201411
+2  20151231.0    201101.0  20151231
+3      2019.0         NaN      2019
+4         NaN         NaN  20070212
+",
