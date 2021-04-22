@@ -21,7 +21,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
 from scipy.spatial import distance
 
-from .relevant_questions import get_rel_que
+#from .relevant_questions import get_rel_que
 
 stop_words = stopwords.words('english')
 stemmer = PorterStemmer()
