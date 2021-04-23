@@ -247,5 +247,7 @@ def summarizer(query):
             'topic': 'python, lists, merge sort',
             'summary': final_summary
         })
+        print(summaries)
+        print("--------------------------------------------------------------------------------------")
 
     return summaries
