@@ -138,7 +138,7 @@ def sentenceSim(sentence1, sentence2, IDF):
     except ZeroDivisionError:
         return float("-inf")
 
-def buildBase(sentences, TF_IDF_dict, n):
+def buildBase(query, TF_IDF_dict, n):
 
     scores = TF_IDF_dict.keys()
     sorted(scores, reverse=True)
@@ -146,6 +146,12 @@ def buildBase(sentences, TF_IDF_dict, n):
     i = 0
     j = 0
     baseWords = []
+
+    for word in query[0].getProcessedWords():
+        baseWords.append(word)
+        i = i+1
+        if(i>n):
+            break
 
     while(i<n):
         words = TF_IDF_dict[list(scores)[j]]
@@ -207,33 +213,39 @@ def makeSummary(sentences, best_sentence, base, summary_len, lambta, IDF):
     return summary
 
 def summarizer(query):
-    print("Hey")
-    #ranking(query)
-    print("Hey")
 
-    answer = "Both versions convey a topic; it’s pretty easy to predict that the paragraph will be about epidemiological evidence, but only the second version establishes an argumentative point and puts it in context. The paragraph doesn’t just describe the epidemiological evidence; it shows how epidemiology is telling the same story as etiology. Similarly, while Version A doesn’t relate to anything in particular, Version B immediately suggests that the prior paragraph addresses the biological pathway (i.e. etiology) of a disease and that the new paragraph will bolster the emerging hypothesis with a different kind of evidence. As a reader, it’s easy to keep track of how the paragraph about cells and chemicals and such relates to the paragraph about populations in different places. A last thing to note about key sentences is that academic readers expect them to be at the beginning of the paragraph. (The first sentence this paragraph is a good example of this in action!) This placement helps readers comprehend your argument. To see how, try this: find an academic piece (such as a textbook or scholarly article) that strikes you as well written and go through part of it reading just the first sentence of each paragraph. You should be able to easily follow the sequence of logic. When you’re writing for professors, it is especially effective to put your key sentences first because they usually convey your own original thinking. It’s a very good sign when your paragraphs are typically composed of a telling key sentence followed by evidence and explanation."
+    topic_ans = ranking(query)
 
-    answers = [answer]
+    link = "https://stackoverflow.com/questions/"
 
-    links = ["https://www.youtube.com/watch?v=3vku3RvlAdc"]
+    summaries = []
 
-    sentences = []
+    for topic in topic_ans:
 
-    for answer in answers:
-        sentences = sentences + processAns("0", answer)
+        answers = topic[["id", "answer"]].values.tolist()
+
+        sentences = []
+
+        for answer in answers:
+            sentences = sentences + processAns(answer[0], answer[1])
+            
+        IDF = IDFs(sentences)
+        TF_IDF_dict = TF_IDF(sentences)
+
+        base = buildBase(processAns("query", query), TF_IDF_dict, 10)
+
+        bestsent = bestSentence(sentences, base, IDF)
+
+        summary = makeSummary(sentences, bestsent, base, 100, 0, IDF)
+
+        final_summary = ""
+        for sent in summary:
+            final_summary = final_summary + "<a href"+ "=" + link + str(int(sent.getId())) + " target='_blank'>" + sent.getOriginalWords() + " </a> "
+        final_summary = final_summary[:-1]
         
-    IDF = IDFs(sentences)
-    TF_IDF_dict = TF_IDF(sentences)
+        summaries.append({
+            'topic': 'python, lists, merge sort',
+            'summary': final_summary
+        })
 
-    base = buildBase(sentences, TF_IDF_dict, 10)
-
-    bestsent = bestSentence(sentences, base, IDF)
-
-    summary = makeSummary(sentences, bestsent, base, 100, 0.5, IDF)
-
-    final_summary = ""
-    for sent in summary:
-        final_summary = final_summary + "<a href"+ "=" + links[int(sent.id)] + ">" + sent.getOriginalWords() + " </a>"
-    final_summary = final_summary[:-1]
-    
-    return []
+    return summaries

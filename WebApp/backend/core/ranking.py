@@ -21,7 +21,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
 from scipy.spatial import distance
 
-#from .relevant_questions import get_rel_que
+from .relevant_questions import rel_questions
 
 stop_words = stopwords.words('english')
 stemmer = PorterStemmer()
@@ -131,8 +131,7 @@ def score(user_score, cosine_score, entropy_score, min_user_score, max_user_scor
 
 # %%
 def ranking(query):
-    print("Hey")
-    #rel_que = get_rel_que(query)
+    rel_que = rel_questions(query)
     query = text_process(query)
 
     ans['ans length'] = ans['answer'].apply(length_text)
@@ -206,5 +205,3 @@ def ranking(query):
     print("Hey")
     return topics_data
 
-
-# %%
