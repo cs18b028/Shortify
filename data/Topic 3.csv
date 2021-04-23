@@ -1,4 +1,4 @@
-answer,link,code,sc
+answer,link,code,sim score,sc
 "pyvips can do exactly what you want very quickly and efficiently. For example:The access=""sequential"" option tells pyvips that you want to stream the image. It will only load pixels on demand as it generates output, so you can merge enormous images using only a little memory. The arrayjoin operator joins an array of images into a grid across tiles across. It has quite a few layout options: you can specify borders, overlaps, background, centring behaviour and so on.I can run it like this:So it joined 100 JPG images to make a 14,000 x 20,000 pixel mosaic in about 2.5s on this laptop, and from watching top, needed about 300mb of memory. I've used it to join over 30,000 images into a single file, and it would go higher. I've made images of over 300,000 by 300,000 pixels.The pyvips equivalent of PIL's paste is insert. You could use that too, though it won't work so well for very large numbers of images. There's also a command-line interface, so you could just enter:To join up a large set of JPG images.",https://pypi.org/project/pyvips/ https://libvips.github.io/libvips/API/current/libvips-conversion.html#vips-arrayjoin https://libvips.github.io/libvips/API/current/libvips-conversion.html#vips-insert,"import sys
 import pyvips
 
@@ -23,7 +23,20 @@ top
 paste
 insert
 vips arrayjoin ""${echo *.jpg}"" x.tif --across 10
-",2.334166017840742
+",1.0,4.149530079193849
+"Using pandas:To get rid of duplicate rows as well:This will not get rid of duplicates as the dataframe is created, but after. So a dataframe gets created by concatenating all of the files. Then it is de-duplicated. The final dataframe can then be saved to csv.",,"import pandas as pd
+
+interesting_files = glob.glob(""/home/tcs/PYTHONMAP/test1/*.csv"") 
+df = pd.concat((pd.read_csv(f, header = 0) for f in interesting_files))
+df.to_csv(""output.csv"")
+
+import pandas as pd
+
+interesting_files = glob.glob(""/home/tcs/PYTHONMAP/test1/*.csv"") 
+df = pd.concat((pd.read_csv(f, header = 0) for f in interesting_files))
+df_deduplicated = df.drop_duplicates()
+df_deduplicated.to_csv(""output.csv"")
+",1.0,4.111392458324318
 "First of all, I assumed you've not repeated your strings correctly (like ""hi, this is an example line."" != ""hi, this is edited line."") by mistake, not on purpose (that I can't figure out).I named the accumulative file common.doc to distinct from the other .txt files in the target directory. Also, this example code implies all the files are in the same directory.And after common.doc editing:And a solution for multiline text (merging stays with .strip() removed on content writing), not suitable for hundreds of thousands of files tho...",,"common.doc
 .txt
 # merging.py
@@ -56,68 +69,7 @@ for elem in elements:
     if name:
         with open(name, ""w"") as f:
             f.write(text)
-",1.6877263605956307
-"Using pandas:To get rid of duplicate rows as well:This will not get rid of duplicates as the dataframe is created, but after. So a dataframe gets created by concatenating all of the files. Then it is de-duplicated. The final dataframe can then be saved to csv.",,"import pandas as pd
-
-interesting_files = glob.glob(""/home/tcs/PYTHONMAP/test1/*.csv"") 
-df = pd.concat((pd.read_csv(f, header = 0) for f in interesting_files))
-df.to_csv(""output.csv"")
-
-import pandas as pd
-
-interesting_files = glob.glob(""/home/tcs/PYTHONMAP/test1/*.csv"") 
-df = pd.concat((pd.read_csv(f, header = 0) for f in interesting_files))
-df_deduplicated = df.drop_duplicates()
-df_deduplicated.to_csv(""output.csv"")
-",1.626503306616306
-"With python's csv reader and writer,
-reading from the files a.csv and b.csv, writing to c.csv:Creates file c.csv:(I assume that those braces and extra linebreaks in your csv code are just here on stackoverflow and not really part of your csv files? I also assume that a.csv and b.csv have the same length in lines.)",,"a.csv
-b.csv
-c.csv
-# -*- coding: utf-8 -*-
-
-import csv
-
-with open('a.csv', 'r') as file_a:
-    with open('b.csv', 'r') as file_b:
-        with open('c.csv', 'w') as file_c:
-            reader_a = csv.reader(file_a, delimiter=',')
-            reader_b = csv.reader(file_b, delimiter=',')
-            writer_c = csv.writer(file_c)
-
-            for cols_a in reader_a:
-                cols_b = reader_b.next()
-                writer_c.writerow(cols_a + cols_b)
-
-c.csv
-a, b, c, d,o, p, q, r
-e, f, g, h,s, t, u, v
-i, j, k, l,w, x, y, z
-",1.2960513101501008
-"You can use merge with left join, if only X is joined column on parameter can be omit:If multiple same columns names:",http://pandas.pydata.org/pandas-docs/stable/generated/pandas.merge.html,"merge
-X
-on
-df = pd.merge(df1, df2, how='left')
-print (df)
-    A    B      X   C    D
-0  NA   50  IW233  12  Jan
-1  EU   23  IW455  50  Aug
-2  LA   21  IW455  50  Aug
-3  ME  100  IW100  16  Nov
-
-df = pd.merge(df1, df2, on='X', how='left')
-print (df)
-    A    B      X   C    D
-0  NA   50  IW233  12  Jan
-1  EU   23  IW455  50  Aug
-2  LA   21  IW455  50  Aug
-3  ME  100  IW100  16  Nov
-",1.2551234132500633
-"Your csv file apparently has 5 columns, but your data is a single list of values. That means that you also only need 1 column header. Pandas complains right now because the dimension of the column list (5) does not match the number of columns in your data (1). You could fix this for example by saying:That is assuming that you want to use the first column name.",,"df = pd.DataFrame(data=data, index=None, columns=[columns[0]])
-",1.1159742898708507
-I would suggest to read the csv files into dataframes and concatenate them this way,,"frames = [pd.read_csv('f1.csv'), pd.read_csv('f2.csv')]
-result = concat(frames,ignore_index=True)
-",1.06685191285156
+",1.0,3.7880423178495963
 "This 'algorithm' tries to makes sense of the input without relying on line endings, so that it should work correctly with some input likeThe code lends itself to being integrated into a state machine - the loop only remembers its current phrase and ""pushes"" finished phrases off onto a list, and gobbles one word at a time. Splitting on whitespaces is good.Notice the ambiguity in case #5: that cannot be reliably solved (and it is possible to have such an ambiguity also with line endings. Maybe combining both...)Output:",,"born in the U.
 S.A.
 
@@ -182,97 +134,64 @@ for p in phrases:
 >> Some sentence that is spliced... and has a continuation.
 >> this cannot be confused by U.S.A. or U.S.A.
 >> In that last sentence... an abbreviation ended the sentence!
-",1.0277856189100438
-"This is perfect case for DataFrame.update, which aligns on indicesOutputNote that update is in place, as quoted from the documentation:Modify in place using non-NA values from another DataFrame.That means that your original dataframe will be updated by the new values. To prevent this, use:",https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.update.html,"DataFrame.update
-Empty_DF.update(ROI_DF)
+",1.0,3.7528483073827843
+"You can use DataFrame.join with rename and parameter on, then DataFrame.set_index with DataFrame.reorder_levels:Or use Index.map:",http://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.join.html http://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.set_index.html http://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.reorder_levels.html http://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Index.map.html,"DataFrame.join
+rename
+on
+DataFrame.set_index
+DataFrame.reorder_levels
+result = (df.join(s1.rename('cnts'), on='Pet')
+           .set_index('cnts', append=True)
+           .reorder_levels([0,2,1]))
+print (result)
+                      Favloc
+Pet     cnts Name           
+Cat     3    Kitty     couch
+             Harry   windows
+             Bear        bed
+             Sam      basket
+Dog     3    Max       floor
+             Hunter   carper
+Hamster 1    Fluffy  Haybale
 
-print(df3)
+Index.map
+idx = df.index.get_level_values('Pet').map(s1.rename('cnts').get)
+result = df.set_index(idx, append=True).reorder_levels([0,2,1])
+print (result)
+                      Favloc
+Pet     cnts Name           
+Cat     3    Kitty     couch
+             Harry   windows
+             Bear        bed
+             Sam      basket
+Dog     3    Max       floor
+             Hunter   carper
+Hamster 1    Fluffy  Haybale
+",1.0,3.456839414926426
+"With python's csv reader and writer,
+reading from the files a.csv and b.csv, writing to c.csv:Creates file c.csv:(I assume that those braces and extra linebreaks in your csv code are just here on stackoverflow and not really part of your csv files? I also assume that a.csv and b.csv have the same length in lines.)",,"a.csv
+b.csv
+c.csv
+# -*- coding: utf-8 -*-
 
-     a    b  c
-a  0.0  5.0  0
-b  1.0  6.0  0
-c  2.0  7.0  0
-d  0.0  0.0  0
-e  3.0  8.0  0
-f  0.0  0.0  0
-
-update
-df3 = Empty_DF.copy()
-df3.update(ROI_DF)
-",1.008417036435381
-"i['meds'] is not a key of description_collapses. The rules are the value of description_collapsed.get(i[""category""]), so you need to extend that value.You also had your parentheses wrong.Note that your final result will be a dictionary, not a list.",,"i['meds']
-description_collapses
-description_collapsed.get(i[""category""])
-description_collapsed = {}
-for i in description:
-    if i[""category""] in description_collapsed:
-        description_collapsed.[i[""category""]].extend(i[""meds""])
-    else:
-        description_collapsed[i[""category""]] = i[""meds""]
-",0.9549607829803591
-"You didn't show linar_eq, but I can guess it is: list() applied to a string breaks it up, producing a list of characters.np.array on that list doesn't change things, and won't make grouping the characters any easier.  Stick with list operations.The two proposed answers follow different 'rules'.  One looks like it takes the characters 2 by 2, but then drops the '='.  The other drops the 'x'.  Why?Your problem is not clearly specified.  But I suspect you'd be better off using the regex mechanism to split up the original string.  It isn't a merging problem.  It's more of a parsing one.",,"linar_eq
-In [9]: eq = ""2x-4=5""
-
-list()
-In [10]: list(eq)
-Out[10]: ['2', 'x', '-', '4', '=', '5']
-
-np.array
-['2x', '-4', '5']
-['2', '-4', '5'] 
-
-regex",0.9260055221515978
-"You're using the csv module, but ignoring csv.reader.  It handles all the parsing for you:Input:Output in the .csv file:EDIT: I see now that you want the data in Excel to be in a single cell.  The above will put it in a row of four cells:The following will write a single cell:Output in the .csv file:Output in Excel:",https://i.stack.imgur.com/gVpaq.png https://i.stack.imgur.com/vi59a.png,"csv
-csv.reader
-#!python2
 import csv
-with open('book2.csv','rb') as inf, open('test.csv','wb') as outf:
-    r = csv.reader(inf)
-    w = csv.writer(outf)
-    L = [row for row in r] # Read all lines as list of lists.
-    L = zip(*L)            # transpose all the lines.
-    w.writerows(L)         # Write them all back out.
 
-222
-333
-444
-555
+with open('a.csv', 'r') as file_a:
+    with open('b.csv', 'r') as file_b:
+        with open('c.csv', 'w') as file_c:
+            reader_a = csv.reader(file_a, delimiter=',')
+            reader_b = csv.reader(file_b, delimiter=',')
+            writer_c = csv.writer(file_c)
 
-222,333,444,555
+            for cols_a in reader_a:
+                cols_b = reader_b.next()
+                writer_c.writerow(cols_a + cols_b)
 
-#!python2
-import csv
-with open('book2.csv') as inf, open('test.csv','wb') as outf:
-    w = csv.writer(outf)
-    data = inf.read().splitlines()
-    w.writerow([','.join(data)])
-
-""222,333,444,555""
-",0.87236575793284
-"You can use pd.concat to literally join by the index of the dataframe.  This means both of your dataframes have to be preordered and you simply ""pasting"" one dataframe next to the other.Output:",,"pd.concat
-pd.concat([df1, df2[['Issue']], axis=1)
-
-  IDs  Value1  Value2 Issue
-0  AB       1       3    AA
-1  AB       1       1   AAA
-2  AB       2       4    BA
-3  BC       2       2    CC
-4  BC       5       0    CA
-5  BG       1       1     A
-6  RF       2       2     D
-",0.8624194000229738
-If you're looking to get two colours on the same line you can use several labels and use .grid() to get them on the same line.If you know you wanted two words and two colours for example you can use something like this:Or if you wanted to have a different colours for each word in a string for example:,,".grid()
-root = Tk()
-Label(root,text=""red text"",fg=""red"").grid(column=0,row=0)
-Label(root,text=""green text"",fg=""green"").grid(column=0,row=1)
-mainloop()
-
-words = [""word1"",""word2"",""word3"",""word4""]
-colours = [""blue"",""green"",""red"",""yellow""]
-
-for index,word in enumerate(words):
-    Label(window,text = word,fg=colours[index]).grid(column=index,row=0)
-",0.7106957769218512
+c.csv
+a, b, c, d,o, p, q, r
+e, f, g, h,s, t, u, v
+i, j, k, l,w, x, y, z
+",1.0,3.4234594079661522
 "I suggest you to use json, which is specific for JSON object manipulation. You can do something like this:where json.load() convert a string to a json object, while json.dumps() convert a json to a string. The parameter indent let you print the object in the expanded way.",,"json
     import json
 
@@ -303,4 +222,187 @@ with open('merged_json.json', ""w"") as f:
 
 json.load()
 json.dumps()
-indent",0.7083230246804454
+indent",1.0,3.386248875543779
+Below code do what you need. I assume each element is separated by white space. This code works with irregular column length and there is no need to put 0 for empty elements in shorter columns. I tested it with simple examples.,,"def read_file(name):
+    rows = open(name, 'r').readlines()
+    data = []
+    for r in rows:
+        data.append(r.split())
+    return data
+
+def invert(data):
+    new_data = []
+    max_col = 0
+    for r in data:
+        if len(r) > max_col:
+            max_col = len(r)
+    col_no = max_col
+    for i in range(col_no):
+        cal = []
+        for j in range(len(data)):
+            if i in range(len(data[j])):
+                cal.append(data[j][i])
+            else:
+                cal.append('   ')
+        new_data.append(cal)
+    return new_data
+
+def merge(data_list):
+    big_data = []
+    for d in data_list:
+        for c in d:
+            big_data.append(c)
+    return big_data
+
+def write_result(result):
+    result_file = open('result', 'w')
+    for r in result:
+        for e in r:
+            result_file.write(e + ' ')
+        result_file.write('\n')
+
+
+data1 = read_file('file1')
+data2 = read_file('file2')
+data3 = read_file('file3')
+new_data1 = invert(data1)
+new_data2 = invert(data2)
+new_data3 = invert(data3)
+big_data = merge([new_data1, new_data2, new_data3])
+result = invert(big_data)
+write_result(result)
+",0.95,3.3723623714299356
+Found a solution (probably not an elegant one). ,,"df = pd.read_csv(file_name, parse_dates=[0], index_col=0, sep=',')
+df['Date'] = df.index.date
+df['Time'] = df.index.time
+df['Time'] = df['Time'].astype(str)
+
+df = df[df['Time'] != '22:00:00']
+
+list_date = set(df['Date'])
+list_time = set(df['Time'])
+
+list_date = sorted(list_date)
+list_time = sorted(list_time)
+
+iterables = [list_date, list_time]
+indexed = pd.MultiIndex.from_product(iterables, names=['date', 'time'])
+
+df_index_date = indexed.get_level_values(0)
+df_index_time = indexed.get_level_values(1)
+
+df_joined = pd.DataFrame(df_index_date.astype(str) + ' ' + df_index_time.astype(str))
+df_joined = df_joined.reset_index()
+df_joined = df_joined.set_index(df_joined[0])
+del df_joined['index']
+del df_joined[0]
+
+df_final = df_joined.join(df)
+df_final = df_final.reset_index(drop=True)
+df_final = df_final.set_index(indexed)
+",0.9,3.3581192374898237
+sql equivalent with where:that would translate to python as:,,"SELECT t1.company,
+        t1.resource,
+        t2.company,
+        t2.resource,
+        t1.ClockInDate,
+        t2.EffectiveFrom,
+        t2.EffectiveTo
+FROM table1 t1
+LEFT JOIN table2 t2 ON t1.resource = t2.resource
+                    AND t1.company = t2.company
+WHERE t1.ClockInDate IS NULL --no ClockInDate to check
+    OR t2.company IS NULL AND t2.resource IS NULL --not rows in t2 for t1
+    OR t1.ClockInDate BETWEEN t2.EffectiveFrom AND t2.EffectiveTo --ClockInDate exists, rows in t2 exist, we can now check ClockInDate to be between t2.EffectiveFrom AND t2.EffectiveTo
+
+df_merge = pd.merge(df1, df2, on=['Company', 'Resource'], how='left')
+df_final = df_merge[df_merge.ClockInDate.isnull() | df_merge.ClockInDate.between(df_merge.EffectiveFrom, df_merge.EffectiveTo) | df_merge.EffectiveFrom.isnull()]
+",1.0,3.334562771734266
+"This is perfect case for DataFrame.update, which aligns on indicesOutputNote that update is in place, as quoted from the documentation:Modify in place using non-NA values from another DataFrame.That means that your original dataframe will be updated by the new values. To prevent this, use:",https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.update.html,"DataFrame.update
+Empty_DF.update(ROI_DF)
+
+print(df3)
+
+     a    b  c
+a  0.0  5.0  0
+b  1.0  6.0  0
+c  2.0  7.0  0
+d  0.0  0.0  0
+e  3.0  8.0  0
+f  0.0  0.0  0
+
+update
+df3 = Empty_DF.copy()
+df3.update(ROI_DF)
+",0.95,3.2739578507401967
+"You can use merge with left join, if only X is joined column on parameter can be omit:If multiple same columns names:",http://pandas.pydata.org/pandas-docs/stable/generated/pandas.merge.html,"merge
+X
+on
+df = pd.merge(df1, df2, how='left')
+print (df)
+    A    B      X   C    D
+0  NA   50  IW233  12  Jan
+1  EU   23  IW455  50  Aug
+2  LA   21  IW455  50  Aug
+3  ME  100  IW100  16  Nov
+
+df = pd.merge(df1, df2, on='X', how='left')
+print (df)
+    A    B      X   C    D
+0  NA   50  IW233  12  Jan
+1  EU   23  IW455  50  Aug
+2  LA   21  IW455  50  Aug
+3  ME  100  IW100  16  Nov
+",0.9,3.257636547384826
+If you're looking to get two colours on the same line you can use several labels and use .grid() to get them on the same line.If you know you wanted two words and two colours for example you can use something like this:Or if you wanted to have a different colours for each word in a string for example:,,".grid()
+root = Tk()
+Label(root,text=""red text"",fg=""red"").grid(column=0,row=0)
+Label(root,text=""green text"",fg=""green"").grid(column=0,row=1)
+mainloop()
+
+words = [""word1"",""word2"",""word3"",""word4""]
+colours = [""blue"",""green"",""red"",""yellow""]
+
+for index,word in enumerate(words):
+    Label(window,text = word,fg=colours[index]).grid(column=index,row=0)
+",1.0,3.2253984944924032
+plan slight alternative ,,"groupby
+'car_id'
+inner
+merge
+coords
+def duper(df):
+    m = df.merge(coords)
+    c = pd.concat([m, coords])
+    # we put the merged rows first and those are
+    # the ones we'll keep after `drop_duplicates(keep='first')`
+    # `keep='first'` is the default, so I don't pass it
+    c1 = (c.drop_duplicates().values == coords.values).all()
+
+    # if `keep=False` then I drop all duplicates.  If I got
+    # everything in `coords` this should be empty
+    c2 = c.drop_duplicates(keep=False).empty
+    return c1 & c2
+
+source.set_index('car_id').groupby(level=0).filter(duper).index.unique().values
+
+array([100, 120])
+
+def duper(df):
+    m = df.drop('car_id', 1).merge(coords)
+    c = pd.concat([m, coords])
+    c1 = (c.drop_duplicates().values == coords.values).all()
+    c2 = c.drop_duplicates(keep=False).empty
+    return c1 & c2
+
+source.groupby('car_id').filter(duper).car_id.unique()
+",1.0,3.2094208134889124
+You can use zip:Output:Or:,,"zip
+my_list1 = [""Harry"", ""Bob""]
+my_list2 = [""21"", ""23""]
+new_data = [dict(zip(['name', 'age'], i)) for i in zip(my_list1, my_list2)]
+
+[{'age': '21', 'name': 'Harry'}, {'age': '23', 'name': 'Bob'}]
+
+[{'name':a,'age':b} for a, b in zip(my_list1, my_list2)]
+",0.95,3.188459618987428

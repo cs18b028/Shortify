@@ -28,7 +28,7 @@ stemmer = PorterStemmer()
 lemmatizer = WordNetLemmatizer()
 
 # %%
-#rel_que = pd.read_csv('../../../data/relevant_questions.csv')
+rel_que = pd.read_csv('../../data/relevant_questions.csv')
 ans = pd.read_csv('../../data/keyword_answer.csv')
 kdf = pd.read_csv('../../data/keywords.csv')
 
@@ -131,8 +131,8 @@ def score(user_score, cosine_score, entropy_score, min_user_score, max_user_scor
 
 # %%
 def ranking(query):
-
-    rel_que = get_rel_que(query)
+    print("Hey")
+    #rel_que = get_rel_que(query)
     query = text_process(query)
 
     ans['ans length'] = ans['answer'].apply(length_text)
@@ -176,7 +176,7 @@ def ranking(query):
         tfidf_dict[words[i]] = tfidf_array[i]
 
     topics_data = []
-
+    print("Hey")
     for topic in topics:
         topic_data = data[data[topic]==1][['id', 'answer', 'link', 'code', 'score', 'answer list', 'question list']]
         topic_df = pd.DataFrame()
@@ -203,7 +203,7 @@ def ranking(query):
         #print(topic_df)
         #path = 'data/'+ topic +'.csv'
         #topic_df.to_csv(path, index=False)
-
+    print("Hey")
     return topics_data
 
 
