@@ -250,7 +250,7 @@ def summarizer(query):
 
         bestsent = bestSentence(sentences, base, IDF)
 
-        summary = makeSummary(sentences, bestsent, base, 100, 0, IDF)
+        summary = makeSummary(sentences, bestsent, base, 100, 0.5, IDF)
 
         final_summary = ""
         for sent in summary:
