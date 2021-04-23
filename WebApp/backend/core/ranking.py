@@ -212,17 +212,6 @@ def ranking(query):
             max_entropy_score = topic_df['entropy'].max()
             scores = []
             for i in range(0, topic_df.shape[0]):
-<<<<<<< HEAD
-                scores.append(score(topic_df.iloc[i]['score'], topic_df.iloc[i]['cosine score'], topic_df.iloc[i]['entropy'], min_user_score, max_user_score, min_cosine_score, max_cosine_score, min_entropy_score, max_entropy_score))
-            topic_df.drop(columns = ['score', 'cosine score', 'entropy'], inplace=True)
-            topic_df['sc'] = scores
-            topic_df.sort_values(by = 'sc', ascending=False, inplace=True, kind='quicksort')
-            topic_df = topic_df.head(15)
-            topics_data.append(topic_df)
-
-    return topics_data
-
-=======
                 scores.append(score(topic_df.iloc[i]['score'], topic_df.iloc[i]['cosine score'], topic_df.iloc[i]['entropy'], 
                                     topic_df.iloc[i]['sim score'], min_user_score, max_user_score, min_cosine_score, max_cosine_score,
                                     min_entropy_score, max_entropy_score))
@@ -235,4 +224,3 @@ def ranking(query):
             #topic_df = topic_df.head(15)
             #topic_df.to_csv(path, index=False)
     return topics_data
->>>>>>> 10228d7afc464bfd861c256506b392f8f6438930
