@@ -3,7 +3,7 @@ import math
 import string
 import re
 import nltk
-from core.ranking import ranking
+from .ranking import ranking
 
 class sentence:
     

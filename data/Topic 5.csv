@@ -1,4 +1,4 @@
-answer,link,code,sc
+answer,link,code,sim score,sc
 "pyvips can do exactly what you want very quickly and efficiently. For example:The access=""sequential"" option tells pyvips that you want to stream the image. It will only load pixels on demand as it generates output, so you can merge enormous images using only a little memory. The arrayjoin operator joins an array of images into a grid across tiles across. It has quite a few layout options: you can specify borders, overlaps, background, centring behaviour and so on.I can run it like this:So it joined 100 JPG images to make a 14,000 x 20,000 pixel mosaic in about 2.5s on this laptop, and from watching top, needed about 300mb of memory. I've used it to join over 30,000 images into a single file, and it would go higher. I've made images of over 300,000 by 300,000 pixels.The pyvips equivalent of PIL's paste is insert. You could use that too, though it won't work so well for very large numbers of images. There's also a command-line interface, so you could just enter:To join up a large set of JPG images.",https://pypi.org/project/pyvips/ https://libvips.github.io/libvips/API/current/libvips-conversion.html#vips-arrayjoin https://libvips.github.io/libvips/API/current/libvips-conversion.html#vips-insert,"import sys
 import pyvips
 
@@ -23,13 +23,7 @@ top
 paste
 insert
 vips arrayjoin ""${echo *.jpg}"" x.tif --across 10
-",2.4419280928929425
-"You should know the shape of returned array. Suppose, myArray.shape = (2, 4)
-Then",,"allArrays = np.empty((0, 4))
-for x in range(0, 1000):
-    myArray = myFunction(x)
-    allArrays = np.append(allArrays, myArray, axis = 0)
-",1.797583883570139
+",1.0,4.406987751771581
 "You cannot have multiple colors in a label. If you want multiple colors, use a one-line Text widget, or use a canvas with a text item. Here's a quick and dirty example using a text widget. It doesn't do smooth scrolling, doesn't use any real data, and leaks memory since I never trim the text in the input widget, but it gives the general idea:",,"import Tkinter as tk
 import random
 
@@ -63,54 +57,7 @@ if __name__ == ""__main__"":
     root = tk.Tk()
     Example(root).pack(fill=""both"", expand=True)
     root.mainloop()
-",1.6480842880047926
-"I would suggest using the TIFF file format. Most TIFF files are striped (one or more scan lines are stored as a block on file), but it is possible to write tiled TIFF files (where the image is divided into tiles, and each is stored as an independent block on file).LibTIFF is the canonical way of reading and writing TIFF files. It has an easy way of creating a new TIFF file, and add tiles one at the time. Thus, your program can create the TIFF file, obtain one sector, write it as (one or more) tiles to the TIFF file, obtain the next sector, etc. You would have to choose your tile size to evenly divide one sector.There is a Python binding to LibTIFF called, what else, PyLibTIFF. It should allow you to follow the above model from within Python. That same repository has pure Python module to read and write TIFF files, I don't know if that is able to write TIFF files in tiles, or if it allows to write them in chunks. There are many other Python modules for reading and writing TIFF files, but most will write one matrix as a TIFF file, rather than allow you to write a file one tile at a time.",http://www.simplesystems.org/libtiff/ https://github.com/pearu/pylibtiff,,1.4584298488472327
-"Create a conditional to find if there is an overlap between the two frames, create new columns based on the conditionals, and merge, using how='outer'What I observed from the data is that if the overlap (end-start) in df_1 is greater than or equal to the overlap in df_2, then add start_data_2, otherwise, leave as is. The calculation hinges on that; if it is a false premise OP, do let me know.",,"#create overlap columns
-
-df_1['overlap']= df_1.end - df_1.start
-df_2['overlap']= df_2.end - df_2.start
-
-cond1 = df_1.overlap.ge(df_2.overlap)
-df_1['key'] = np.where(cond1, df_2.some_data_2,'n1')
-df_2['key'] = np.where(cond1, df_2.some_data_2,'n')
-
-(pd
- .merge(df_1,df_2,
-        how='outer',
-        on='key',
-        suffixes = ('_1','_2'))
- .drop(['key','overlap_1','overlap_2'],
-       axis=1)
-  )
-
-   start_1  end_1   some_data_1 start_2 end_2   some_data_2
-0   0.0     5.0        AA        0.0    5.0      AA_AA
-1   10.0    17.0       BB       12.0    17.0     BB_BB
-2   23.0    28.0       CC       23.0    25.0     CC_CC
-3   35.0    41.0       DD       NaN     NaN      NaN
-4   NaN     NaN        NaN      55.0    62.0     DD_DD
-",1.343615335751013
-"You can do:to find the columns that the two df's have in common , then replace those in the first with the columns from the second.
-This will give you results for example given an initial A:and New_df:   And we wind up with  final 'A', with y column taken from New_df:",,"cols1=set(A.columns.tolist())
-cols2=set(New_df.columns.tolist())
-common_cols = list(cols1.intersection(cols2))
-A[common_cols]=New_df[common_cols]
-
-   x  y     
-0  1  a
-1  2  b
-2  3  c
-
-   z  y
-0  4  d
-1  5  e
-2  6  f
-
-   x  y
-0  1  d
-1  2  e
-2  3  f
-",1.1631993241698901
+",1.0,3.9804943456988546
 "If I understand correctly, you want to recursively merge the nodes until there is no overlap between the edges. My idea was to start with a fully connected graph and ""recursively"" merge the nodes. Here is a 'fake' recursive implementation. EDIT: I'm not too sure why networkx is necessary here, it could be done with just dicts (maybe more clear). ",https://i.stack.imgur.com/7rS6L.png,"import networkx as nx
 
 # file you provided
@@ -165,9 +112,76 @@ nx.draw(merged, ax = right, with_labels = 1)
 left.set_title('Before merging')
 right.set_title('After merging')
 fig.show()
-",0.974767818456939
-"Your csv file apparently has 5 columns, but your data is a single list of values. That means that you also only need 1 column header. Pandas complains right now because the dimension of the column list (5) does not match the number of columns in your data (1). You could fix this for example by saying:That is assuming that you want to use the first column name.",,"df = pd.DataFrame(data=data, index=None, columns=[columns[0]])
-",0.9488530946258464
+",1.0,3.9242207135309815
+"Create a conditional to find if there is an overlap between the two frames, create new columns based on the conditionals, and merge, using how='outer'What I observed from the data is that if the overlap (end-start) in df_1 is greater than or equal to the overlap in df_2, then add start_data_2, otherwise, leave as is. The calculation hinges on that; if it is a false premise OP, do let me know.",,"#create overlap columns
+
+df_1['overlap']= df_1.end - df_1.start
+df_2['overlap']= df_2.end - df_2.start
+
+cond1 = df_1.overlap.ge(df_2.overlap)
+df_1['key'] = np.where(cond1, df_2.some_data_2,'n1')
+df_2['key'] = np.where(cond1, df_2.some_data_2,'n')
+
+(pd
+ .merge(df_1,df_2,
+        how='outer',
+        on='key',
+        suffixes = ('_1','_2'))
+ .drop(['key','overlap_1','overlap_2'],
+       axis=1)
+  )
+
+   start_1  end_1   some_data_1 start_2 end_2   some_data_2
+0   0.0     5.0        AA        0.0    5.0      AA_AA
+1   10.0    17.0       BB       12.0    17.0     BB_BB
+2   23.0    28.0       CC       23.0    25.0     CC_CC
+3   35.0    41.0       DD       NaN     NaN      NaN
+4   NaN     NaN        NaN      55.0    62.0     DD_DD
+",1.0,3.554062982975894
+"You should know the shape of returned array. Suppose, myArray.shape = (2, 4)
+Then",,"allArrays = np.empty((0, 4))
+for x in range(0, 1000):
+    myArray = myFunction(x)
+    allArrays = np.append(allArrays, myArray, axis = 0)
+",1.0,3.4705297270938056
+"Updated answer courtesy @OP:(Old Answer - don't use)You don’t have to create a variation each circle. Chain them:Update: Reduce is awesome in simplicity and speed, but for readability, it is less readable compared to mergers: We could DRY the code:",,"dfs = [df1, df2, df3, df4, df5] 
+from functools import partial 
+outer_merge = partial(pd.merge, how='outer') 
+reduce(outer_merge, dfs)
+
+ df= df5.merge(df4[['code', 'name']],
+            left_on='provinceCode', 
+            right_on='code', 
+            how='left'
+            ).merge(df3[['code', 'name']], 
+            left_on='areaCode', 
+            right_on='code', 
+            how = 'left'
+            ).merge(df2[['code', 'name']], 
+            left_on='areaCode',
+            right_on='code',
+            how ='left'
+            ).merge(df1[['provinceCode', 'provinceName']],
+            left_on='provinceCode',
+            right_on='code',
+            how='left')
+
+common_joins = dict(right_on='code', how='left')
+common_columns = ['code', 'name']
+
+df= df5.merge(df4[common_columns],
+            left_on='provinceCode', 
+            **common_joins
+            ).merge(df3[common_columns], 
+            left_on='areaCode', 
+            **common_joins
+            ).merge(df2[common_columns], 
+            left_on='areaCode',
+            **common_joins
+            ).merge(df1[['provinceCode', 'provinceName']],
+            left_on='provinceCode',
+            **common_joins)
+",0.95,3.2816012956783847
 If you're looking to get two colours on the same line you can use several labels and use .grid() to get them on the same line.If you know you wanted two words and two colours for example you can use something like this:Or if you wanted to have a different colours for each word in a string for example:,,".grid()
 root = Tk()
 Label(root,text=""red text"",fg=""red"").grid(column=0,row=0)
@@ -179,46 +193,36 @@ colours = [""blue"",""green"",""red"",""yellow""]
 
 for index,word in enumerate(words):
     Label(window,text = word,fg=colours[index]).grid(column=index,row=0)
-",0.715490073434736
-"To not loose the position when inserting prediction in the missing values you can use this approach, in example:To get the complete data merged in one pandas dataframe first get the known part together:If there is no missing value would do the job.",,"# merge train part of the data into a dataframe    
-X_train = X_train.sort_index()
-    y_train = y_train.sort_index()
-    result = pd.concat([X_train,X_test])
+",1.0,3.2657019452601754
+Found a solution (probably not an elegant one). ,,"df = pd.read_csv(file_name, parse_dates=[0], index_col=0, sep=',')
+df['Date'] = df.index.date
+df['Time'] = df.index.time
+df['Time'] = df['Time'].astype(str)
 
-# if need to convert numpy array to pandas series: 
-# prediction = pd.Series(prediction)
+df = df[df['Time'] != '22:00:00']
 
+list_date = set(df['Date'])
+list_time = set(df['Time'])
 
-# here is the magic
-result['specie'][result['specie'].isnull()] = prediction.values
-",0.6926393109760531
-"You need to learn how to ask question.
-You should show us what you tried and what you did.
-You should try and write the algorithm yourself...Luckily for you, I was board at work so I just hacked a solution for you..
-Try it and see if it works:Good luck next time!",,"def convert_function(input):
-    output = {}
-    for val in input:
-        first_dict = output.get(val[0][0], {})
-        second_dict = first_dict.get(val[0], {})
-        third_dict = second_dict.get(val[1][0], {})
+list_date = sorted(list_date)
+list_time = sorted(list_time)
 
-        third_dict[val[1]] = val[2]
-        second_dict[val[1][0]] = third_dict
-        first_dict[val[0]] = second_dict
+iterables = [list_date, list_time]
+indexed = pd.MultiIndex.from_product(iterables, names=['date', 'time'])
 
-        output[val[0][0]] = first_dict
-    return output
+df_index_date = indexed.get_level_values(0)
+df_index_time = indexed.get_level_values(1)
 
-input = [
-    ('A-1', 'B-1', 'C'), 
-    ('A-1', 'B-2', 'D'), 
-    ('A-1', 'B-3', 'E'), 
-    ('A-1', 'B-4', 'F'), 
-    ('A-1', 'B-5', 'G')
-]
+df_joined = pd.DataFrame(df_index_date.astype(str) + ' ' + df_index_time.astype(str))
+df_joined = df_joined.reset_index()
+df_joined = df_joined.set_index(df_joined[0])
+del df_joined['index']
+del df_joined[0]
 
-print convert_function(input)
-",0.6900459807695879
+df_final = df_joined.join(df)
+df_final = df_final.reset_index(drop=True)
+df_final = df_final.set_index(indexed)
+",0.9,3.190589742481553
 Verified solution (using heapq.merge):Prints:On leetcode it was classified as Success (link):,https://docs.python.org/3.8/library/heapq.html#heapq.merge https://leetcode.com/submissions/detail/289269685/ https://i.stack.imgur.com/2A4zb.png,"heapq.merge
 from heapq import merge
 
@@ -282,31 +286,98 @@ print_list(new_list_node)
 4
 4
 
-leetcode",0.5845550469745174
-"A little bit tricky , using shift create the groupkey , then agg ",,"shift
-agg
-df.fillna('NaN',inplace=True) # notice here NaN always no equal to NaN, so I replace it with string 'NaN'
-df.groupby((df.drop('Y',1)!=df.drop('Y',1).shift()).any(1).cumsum()).\
-     agg(lambda x : ','.join(x) if x.name=='Y' else x.iloc[0])
-Out[19]: 
-         Y   X1    X2    X3    X4    X5
-1    A,B,C  NaN -3810  TRUE  None  None
-2  D,E,F,G  NaN -3810  None  None  None
-3        H  NaN -3810  TRUE  None  None
-",0.5420109690490952
-"According to the documentation you can pass in the axes you want to plot to. Therefore, your code would become:",https://pandas.pydata.org/pandas-docs/stable/generated/pandas.DataFrame.plot.html,"fig, ax = plt.subplots()
+leetcode",1.0,3.112647039599249
+"This isn't pretty, but what if you did something like this:And this would be the general case:",,"df2 = DataFrame(df, copy=True)
+df2[['lat2', 'lon2']] = df[['lat', 'lon']].shift(-1)
+df2.set_index(['lat', 'lon', 'lat2', 'lon2'], inplace=True)
+print(df2.loc[(12, 10, 13, 9)].reset_index(drop=True))
 
-df1.plot(x = 'Interval', y = 'Trend', ax=ax)
-df2.plot(x = 'Value', y = 'Reliability', ax=ax)
+   car_id
+0     100
+1     120
 
-ax.set_yscale(""log"")
-plt.show()
-",0.5085914176528068
-If you want to use zip here its going to have to be zip_longest due to the uneven sizes of the the two,,"from itertools import zip_longest
+raw_data = {'car_id': [100, 100, 100, 110, 110, 110, 110, 120, 120, 120, 120, 130],
+            'lat': [10, 12, 13, 23, 13, 12, 12, 11, 12, 13, 14, 12],
+            'lon': [15, 10, 9, 8, 9, 10, 2, 11, 10, 9, 8, 10],
+           }
+df = pd.DataFrame(raw_data, columns = ['car_id', 'lat', 'lon'])
 
-name3 = list(zip_longest(name1.split(), name2.split(), fillvalue = ''))
-print(' '.join([j for i in name3 for j in i]))
+raw_data = {
+             'lat': [10, 12, 13],
+             'lon': [15, 10, 9],
+           }
 
-James John Ryan Becky  William  Isaac
+coords = pd.DataFrame(raw_data, columns = ['lat', 'lon'])
 
-zip_longest",0.4799077740711442
+def submatch(df, match):
+    df2 = DataFrame(df['car_id'])
+    for x in range(match.shape[0]):
+        df2[['lat{}'.format(x), 'lon{}'.format(x)]] = df[['lat', 'lon']].shift(-x)
+
+    n = match.shape[0]
+    cols = [item for sublist in
+        [['lat{}'.format(x), 'lon{}'.format(x)] for x in range(n)]
+        for item in sublist]
+
+    df2.set_index(cols, inplace=True)
+    return df2.loc[tuple(match.stack().values)].reset_index(drop=True)
+
+print(submatch(df, coords))
+
+   car_id
+0     100
+",0.95,3.0672206528848953
+what is the difference with @Geoff's answer and this one?,,"for x in range(0, len(df)):
+    for y in range(0, len(df1)):
+        if (df.iloc[x,'ip_address'] <= df1.iloc[y,'upper_bound_ip_address'] and (df.iloc[x,'ip_address'] >= df1.iloc[y,'lower_bound_ip_address']):
+            df['country']=df1.iloc[y,'country']
+",0.85,3.005567833277807
+I don't know why most of the answers have list1+list2 as it will just append the list(s) which is not the expected output. You can try something as below. Taking order from your example provided where one element is from smaller list and other from the bigger list.,,"list1+list2
+input1='John Becky William Isaac'
+input2='James Ryan'
+input1=input1.split(' ')
+input2=input2.split(' ')
+new=[]
+
+max_list,min_list=(input1,input2) if len(input1)>len(input2) else (input2,input1)
+
+for i in range(len(min_list)):
+    new.append(min_list[i]+' '+max_list[i])
+new += max_list[len(min_list):]
+print(' '.join(new)) # James John Ryan Becky William Isaac
+",1.0,2.9556271534207865
+"You can do:to find the columns that the two df's have in common , then replace those in the first with the columns from the second.
+This will give you results for example given an initial A:and New_df:   And we wind up with  final 'A', with y column taken from New_df:",,"cols1=set(A.columns.tolist())
+cols2=set(New_df.columns.tolist())
+common_cols = list(cols1.intersection(cols2))
+A[common_cols]=New_df[common_cols]
+
+   x  y     
+0  1  a
+1  2  b
+2  3  c
+
+   z  y
+0  4  d
+1  5  e
+2  6  f
+
+   x  y
+0  1  d
+1  2  e
+2  3  f
+",0.9,2.903960417359605
+"To not loose the position when inserting prediction in the missing values you can use this approach, in example:To get the complete data merged in one pandas dataframe first get the known part together:If there is no missing value would do the job.",,"# merge train part of the data into a dataframe    
+X_train = X_train.sort_index()
+    y_train = y_train.sort_index()
+    result = pd.concat([X_train,X_test])
+
+# if need to convert numpy array to pandas series: 
+# prediction = pd.Series(prediction)
+
+
+# here is the magic
+result['specie'][result['specie'].isnull()] = prediction.values
+",1.0,2.876481842210966
+"Your csv file apparently has 5 columns, but your data is a single list of values. That means that you also only need 1 column header. Pandas complains right now because the dimension of the column list (5) does not match the number of columns in your data (1). You could fix this for example by saying:That is assuming that you want to use the first column name.",,"df = pd.DataFrame(data=data, index=None, columns=[columns[0]])
+",1.0,2.8574828265245893

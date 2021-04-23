@@ -1,29 +1,124 @@
-answer,link,code,sc
-"pyvips can do exactly what you want very quickly and efficiently. For example:The access=""sequential"" option tells pyvips that you want to stream the image. It will only load pixels on demand as it generates output, so you can merge enormous images using only a little memory. The arrayjoin operator joins an array of images into a grid across tiles across. It has quite a few layout options: you can specify borders, overlaps, background, centring behaviour and so on.I can run it like this:So it joined 100 JPG images to make a 14,000 x 20,000 pixel mosaic in about 2.5s on this laptop, and from watching top, needed about 300mb of memory. I've used it to join over 30,000 images into a single file, and it would go higher. I've made images of over 300,000 by 300,000 pixels.The pyvips equivalent of PIL's paste is insert. You could use that too, though it won't work so well for very large numbers of images. There's also a command-line interface, so you could just enter:To join up a large set of JPG images.",https://pypi.org/project/pyvips/ https://libvips.github.io/libvips/API/current/libvips-conversion.html#vips-arrayjoin https://libvips.github.io/libvips/API/current/libvips-conversion.html#vips-insert,"import sys
-import pyvips
+answer,link,code,sim score,sc
+"First off, don't feel bad as I had to test this to see why it doesn't work, and I wrote the thing.The merge() use case is one where you're taking some kind of in-application data, either from an offline cache or some locally modified structure, and moving it into a new Session.   merge() is mostly about merging changes, so when it sees attributes that have no ""change"", it assumes no special work is needed.   So it skips unloaded relationships.  If it did follow unloaded relationships, the merge process would become a very slow and burdensome operation as it traverses the full graph of relationships loading everything recursively, potentially loading a significant portion of the database into memory for a highly interlinked schema.  The ""copy from one database to another"" use case here was not anticipated.the data does go in if you just make sure all those edges are loaded ahead of time, here's a demo.   the default cascade is ""save-update, merge"" also so you don't have to specify that.",,"from sqlalchemy import create_engine, Column, String, Integer, ForeignKey
+from sqlalchemy.orm import Session, relationship, backref, immediateload
+from sqlalchemy.ext.declarative import declarative_base
+import os
 
-images = [pyvips.Image.new_from_file(filename, access=""sequential"")
-          for filename in sys.argv[2:]]
-final = pyvips.Image.arrayjoin(images, across=10)
-final.write_to_file(sys.argv[1])
+Base = declarative_base()
 
-access=""sequential""
-arrayjoin
-across
-$ for i in {1..100}; do cp ~/pics/k2.jpg $i.jpg; done
-$ time ../arrayjoin.py x.tif *.jpg 
+class Person(Base):
+    __tablename__ = ""people""
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
 
-real    0m2.498s
-user    0m3.579s
-sys 0m1.054s
-$ vipsheader x.tif
-x.tif: 14500x20480 uchar, 3 bands, srgb, tiffload
+    def __init__(self, name):
+        self.name = name
 
-top
-paste
-insert
-vips arrayjoin ""${echo *.jpg}"" x.tif --across 10
-",2.0140720338076887
+
+class Edge(Base):
+    __tablename__ = ""edges""
+    id = Column(Integer, primary_key=True)
+    kid_id = Column(Integer, ForeignKey(""people.id""))
+    parent_id = Column(Integer, ForeignKey(""people.id""))
+    kid = relationship(""Person"", primaryjoin=""Edge.kid_id==Person.id"",
+                       backref=backref(""parent_edges"",
+                                       collection_class=set))
+    parent = relationship(""Person"", primaryjoin=""Edge.parent_id==Person.id"",
+                          backref=backref(""kid_edges"",
+                                          collection_class=set))
+
+    def __init__(self, kid, parent):
+        self.kid = kid
+        self.parent = parent
+
+def teardown():
+    for path in (""in.db"", ""out.db""):
+        if os.path.exists(path):
+            os.remove(path)
+
+def fixture():
+    engine = create_engine(""sqlite:///in.db"", echo=True)
+    Base.metadata.create_all(engine)
+
+    s = Session(engine)
+    p1, p2, p3, p4, p5 = [Person('p%d' % i) for i in xrange(1, 6)]
+    Edge(p1, p2)
+    Edge(p1, p3)
+    Edge(p4, p3)
+    Edge(p5, p2)
+    s.add_all([
+        p1, p2, p3, p4, p5
+    ])
+    s.commit()
+    return s
+
+def copy(source_session):
+    engine = create_engine(""sqlite:///out.db"", echo=True)
+    Base.metadata.create_all(engine)
+
+    s = Session(engine)
+    for person in source_session.query(Person).\
+            options(immediateload(Person.parent_edges),
+                        immediateload(Person.kid_edges)):
+        s.merge(person)
+
+    s.commit()
+
+    assert s.query(Person).count() == 5
+    assert s.query(Edge).count() == 4
+
+teardown()
+source_session = fixture()
+copy(source_session)
+",1.0,4.057752097349123
+"I believe you can use dask.
+and function merge.Docs say:What definitely works?Cleverly parallelizable operations (also fast):Join on index: dd.merge(df1, df2, left_index=True, right_index=True)Or:Operations requiring a shuffle (slow-ish, unless on index)Set index: df.set_index(df.x)Join not on the index: pd.merge(df1, df2, on='name')You can also check how Create Dask DataFrames.Example",http://dask.pydata.org/en/latest/index.html http://dask.pydata.org/en/latest/dataframe-api.html?highlight=merge#dask.dataframe.core.DataFrame.merge http://dask.pydata.org/en/latest/dataframe.html#what-definitely-works http://dask.pydata.org/en/latest/dataframe-create.html,"merge
+import pandas as pd
+
+left = pd.DataFrame({'key': ['K0', 'K1', 'K2', 'K3'],
+                      'A': ['A0', 'A1', 'A2', 'A3'],
+                     'B': ['B0', 'B1', 'B2', 'B3']})
+
+
+right = pd.DataFrame({'key': ['K0', 'K1', 'K2', 'K3'],
+                      'C': ['C0', 'C1', 'C2', 'C3'],
+                      'D': ['D0', 'D1', 'D2', 'D3']})
+
+
+result = pd.merge(left, right, on='key')
+print result
+    A   B key   C   D
+0  A0  B0  K0  C0  D0
+1  A1  B1  K1  C1  D1
+2  A2  B2  K2  C2  D2
+3  A3  B3  K3  C3  D3
+
+import dask.dataframe as dd
+
+#Construct a dask objects from a pandas objects
+left1 = dd.from_pandas(left, npartitions=3)
+right1 = dd.from_pandas(right, npartitions=3)
+
+#merge on key
+print dd.merge(left1, right1, on='key').compute()
+    A   B key   C   D
+0  A3  B3  K3  C3  D3
+1  A1  B1  K1  C1  D1
+0  A2  B2  K2  C2  D2
+1  A0  B0  K0  C0  D0
+
+#first set indexes and then merge by them
+print dd.merge(left1.set_index('key').compute(), 
+               right1.set_index('key').compute(), 
+               left_index=True, 
+               right_index=True)
+      A   B   C   D
+key                
+K0   A0  B0  C0  D0
+K1   A1  B1  C1  D1
+K2   A2  B2  C2  D2
+K3   A3  B3  C3  D3
+",1.0,3.8109927597061457
 "Your naive method sounds very reasonable; I think the time complexity of it is O(NM), where N is the number of intervals you're trying to resolve, and M is the the range over which you're trying to resolve them.  The difficulty you might have is that you also have space complexity of O(M), which might use up a fair bit of memory.Here's a method for merging without building a ""master list"", which may be faster; because it treats intervals as objects, complexity is no longer tied to M.I'll represent an interval (or list of intervals) as a set of tuples (a,b,p), each of which indicates the time points from a to b, inclusively, with the integer priority p (W can be 1, and S can be 2).  In each interval, it must be the case that a < b.  Higher priorities are preferred.We need a predicate to define the overlap between two intervals:When we find overlaps, we need to resolve them.  This method takes care of that, respecting priority:Finally, merge_intervals takes an iterable of intervals and joins them together until there are no more overlaps:I think this has worst-case time complexity of O(N^4), although the average case should be fast.  In any case, you may want to time this solution against your simpler method, to see what works better for your problem.As far as I can see, my merge_intervals works for your examples:To cover the case with blank (B) intervals, simply add another interval tuple which covers the whole range with priority 0: (1, M, 0):",,"(a,b,p)
 a
 b
@@ -124,79 +219,120 @@ assert (merge_intervals([(1, 2, 1), (5, 8, 2), (9, 10, 1),
                          (16, 20, 2), (1, 20, 0)]) ==
         {(1, 2, 1), (3, 4, 0), (5, 8, 2),
          (9, 10, 1), (11, 15, 0), (16, 20, 2)})
-",1.9660009841126245
-"First off, don't feel bad as I had to test this to see why it doesn't work, and I wrote the thing.The merge() use case is one where you're taking some kind of in-application data, either from an offline cache or some locally modified structure, and moving it into a new Session.   merge() is mostly about merging changes, so when it sees attributes that have no ""change"", it assumes no special work is needed.   So it skips unloaded relationships.  If it did follow unloaded relationships, the merge process would become a very slow and burdensome operation as it traverses the full graph of relationships loading everything recursively, potentially loading a significant portion of the database into memory for a highly interlinked schema.  The ""copy from one database to another"" use case here was not anticipated.the data does go in if you just make sure all those edges are loaded ahead of time, here's a demo.   the default cascade is ""save-update, merge"" also so you don't have to specify that.",,"from sqlalchemy import create_engine, Column, String, Integer, ForeignKey
-from sqlalchemy.orm import Session, relationship, backref, immediateload
-from sqlalchemy.ext.declarative import declarative_base
-import os
+",1.0,3.763867086902746
+"pyvips can do exactly what you want very quickly and efficiently. For example:The access=""sequential"" option tells pyvips that you want to stream the image. It will only load pixels on demand as it generates output, so you can merge enormous images using only a little memory. The arrayjoin operator joins an array of images into a grid across tiles across. It has quite a few layout options: you can specify borders, overlaps, background, centring behaviour and so on.I can run it like this:So it joined 100 JPG images to make a 14,000 x 20,000 pixel mosaic in about 2.5s on this laptop, and from watching top, needed about 300mb of memory. I've used it to join over 30,000 images into a single file, and it would go higher. I've made images of over 300,000 by 300,000 pixels.The pyvips equivalent of PIL's paste is insert. You could use that too, though it won't work so well for very large numbers of images. There's also a command-line interface, so you could just enter:To join up a large set of JPG images.",https://pypi.org/project/pyvips/ https://libvips.github.io/libvips/API/current/libvips-conversion.html#vips-arrayjoin https://libvips.github.io/libvips/API/current/libvips-conversion.html#vips-insert,"import sys
+import pyvips
 
-Base = declarative_base()
+images = [pyvips.Image.new_from_file(filename, access=""sequential"")
+          for filename in sys.argv[2:]]
+final = pyvips.Image.arrayjoin(images, across=10)
+final.write_to_file(sys.argv[1])
 
-class Person(Base):
-    __tablename__ = ""people""
-    id = Column(Integer, primary_key=True)
-    name = Column(String)
+access=""sequential""
+arrayjoin
+across
+$ for i in {1..100}; do cp ~/pics/k2.jpg $i.jpg; done
+$ time ../arrayjoin.py x.tif *.jpg 
 
-    def __init__(self, name):
-        self.name = name
+real    0m2.498s
+user    0m3.579s
+sys 0m1.054s
+$ vipsheader x.tif
+x.tif: 14500x20480 uchar, 3 bands, srgb, tiffload
 
+top
+paste
+insert
+vips arrayjoin ""${echo *.jpg}"" x.tif --across 10
+",1.0,3.5854693934181983
+Consider a concatenation with merge which would translate your SQL query as OR is often analogous to a UNION:,,"OR
+UNION
+pd.concat([pd.merge(table_A, table_B, on='one'),
+           pd.merge(table_A, table_B, left_on='two', right_on='one')])
+",0.95,3.4715260375335504
+"Python standard library offers a method for it: heapq.merge.
+As the documentation says, it is very similar to using itertools (but with more limitations); if you cannot live with those limitations (or if you do not use Python 2.6) you can do something like this:However, I think it has the same complexity as your own solution, although using iterators should give some quite good optimization and speed increase.",http://docs.python.org/library/heapq.html#heapq.merge http://docs.python.org/library/itertools.html#itertools.chain,"heapq.merge
+sorted(itertools.chain(args), cmp)
+",1.0,3.436078000554735
+"There are many ways to do this, staying in Pandas I did the following.With the file structureThis code will work, it's a little verbose for explanation but you can shorten with implementation.",,"root/  
+├── dir1/  
+│   ├── data_20170101_k   
+│   ├── data_20170102_k    
+│   ├── ...  
+├── dir2/    
+│   ├── data_20170101_k    
+│   └── data_20170101_k  
+│   └── ...   
+└── ... 
 
-class Edge(Base):
-    __tablename__ = ""edges""
-    id = Column(Integer, primary_key=True)
-    kid_id = Column(Integer, ForeignKey(""people.id""))
-    parent_id = Column(Integer, ForeignKey(""people.id""))
-    kid = relationship(""Person"", primaryjoin=""Edge.kid_id==Person.id"",
-                       backref=backref(""parent_edges"",
-                                       collection_class=set))
-    parent = relationship(""Person"", primaryjoin=""Edge.parent_id==Person.id"",
-                          backref=backref(""kid_edges"",
-                                          collection_class=set))
+import glob
+import pandas as pd
 
-    def __init__(self, kid, parent):
-        self.kid = kid
-        self.parent = parent
+CONCAT_DIR = ""/FILES_CONCAT/""
 
-def teardown():
-    for path in (""in.db"", ""out.db""):
-        if os.path.exists(path):
-            os.remove(path)
+# Use glob module to return all csv files under root directory. Create DF from this.
+files = pd.DataFrame([file for file in glob.glob(""root/*/*"")], columns=[""fullpath""])
 
-def fixture():
-    engine = create_engine(""sqlite:///in.db"", echo=True)
-    Base.metadata.create_all(engine)
+#    fullpath
+# 0  root\dir1\data_20170101_k.csv
+# 1  root\dir1\data_20170102_k.csv
+# 2  root\dir2\data_20170101_k.csv
+# 3  root\dir2\data_20170102_k.csv
 
-    s = Session(engine)
-    p1, p2, p3, p4, p5 = [Person('p%d' % i) for i in xrange(1, 6)]
-    Edge(p1, p2)
-    Edge(p1, p3)
-    Edge(p4, p3)
-    Edge(p5, p2)
-    s.add_all([
-        p1, p2, p3, p4, p5
-    ])
-    s.commit()
-    return s
+# Split the full path into directory and filename
+files_split = files['fullpath'].str.rsplit(""\\"", 1, expand=True).rename(columns={0: 'path', 1:'filename'})
 
-def copy(source_session):
-    engine = create_engine(""sqlite:///out.db"", echo=True)
-    Base.metadata.create_all(engine)
+#    path       filename
+# 0  root\dir1  data_20170101_k.csv
+# 1  root\dir1  data_20170102_k.csv
+# 2  root\dir2  data_20170101_k.csv
+# 3  root\dir2  data_20170102_k.csv
 
-    s = Session(engine)
-    for person in source_session.query(Person).\
-            options(immediateload(Person.parent_edges),
-                        immediateload(Person.kid_edges)):
-        s.merge(person)
+# Join these into one DataFrame
+files = files.join(files_split)
 
-    s.commit()
+#    fullpath                       path        filename
+# 0  root\dir1\data_20170101_k.csv  root\dir1   data_20170101_k.csv
+# 1  root\dir1\data_20170102_k.csv  root\dir1   data_20170102_k.csv
+# 2  root\dir2\data_20170101_k.csv  root\dir2   data_20170101_k.csv
+# 3  root\dir2\data_20170102_k.csv  root\dir2   data_20170102_k.csv
 
-    assert s.query(Person).count() == 5
-    assert s.query(Edge).count() == 4
+# Iterate over unique filenames; read CSVs, concat DFs, save file
+for f in files['filename'].unique():
+    paths = files[files['filename'] == f]['fullpath'] # Get list of fullpaths from unique filenames
+    dfs = [pd.read_csv(path, header=None) for path in paths] # Get list of dataframes from CSV file paths
+    concat_df = pd.concat(dfs) # Concat dataframes into one
+    concat_df.to_csv(CONCAT_DIR + f) # Save dataframe
+",1.0,3.4360656312431215
+"Ok, here's some working code. Is this roughly what you need?
+I'm not too happy with it yet, it looks a bit ugly imho but I want to know if it's the right direction.Output:",,"words = '''Some sentence that is spliced...
+and has a continuation.
+this cannot be confused by U.S.A.
+In that
+last sentence... 
+an abbreviation ended the sentence!'''.split()
 
-teardown()
-source_session = fixture()
-copy(source_session)
-",1.6370002672980468
+def format_sentence(words):
+    output = []
+
+    for word in words:
+        if word.endswith('...') or not word.endswith('.'):
+            output.append(word)
+            output.append(' ')
+        elif word.endswith('.'):
+            output.append(word)
+            output.append('\n')
+        else:
+            raise ValueError('Unexpected result from word: %r' % word)
+
+    return ''.join(output)
+
+print format_sentence(words)
+
+Some sentence that is spliced... and has a continuation.
+this cannot be confused by U.S.A.
+In that last sentence...  an abbreviation ended the sentence!
+",1.0,3.3885990233203716
 "First of all, I assumed you've not repeated your strings correctly (like ""hi, this is an example line."" != ""hi, this is edited line."") by mistake, not on purpose (that I can't figure out).I named the accumulative file common.doc to distinct from the other .txt files in the target directory. Also, this example code implies all the files are in the same directory.And after common.doc editing:And a solution for multiline text (merging stays with .strip() removed on content writing), not suitable for hundreds of thousands of files tho...",,"common.doc
 .txt
 # merging.py
@@ -229,11 +365,26 @@ for elem in elements:
     if name:
         with open(name, ""w"") as f:
             f.write(text)
-",1.540225982017106
-"Python standard library offers a method for it: heapq.merge.
-As the documentation says, it is very similar to using itertools (but with more limitations); if you cannot live with those limitations (or if you do not use Python 2.6) you can do something like this:However, I think it has the same complexity as your own solution, although using iterators should give some quite good optimization and speed increase.",http://docs.python.org/library/heapq.html#heapq.merge http://docs.python.org/library/itertools.html#itertools.chain,"heapq.merge
-sorted(itertools.chain(args), cmp)
-",1.3625817558946562
+",1.0,3.377326059159793
+"pandas
+pd.merge_asof + querynumpy
+np.searchsorted ",,"pandas
+pd.merge_asof
+query
+pd.merge_asof(
+    df.sort_values('ip_address'), df1,
+    left_on='ip_address', right_on='lower_bound_ip_address'
+).query('ip_address <= upper_bound_ip_address')[['ip_address', 'country']]
+
+numpy
+np.searchsorted
+b = df1.values[:, :2].ravel()
+c = df1.country.values
+ip = df.ip_address.values
+srch = b.searchsorted(ip) // 2
+mask = (ip >= b[0]) & (ip <= b[-1])
+df.loc[mask, 'country'] = c[srch[mask]]
+",1.0,3.34719301379858
 "You cannot have multiple colors in a label. If you want multiple colors, use a one-line Text widget, or use a canvas with a text item. Here's a quick and dirty example using a text widget. It doesn't do smooth scrolling, doesn't use any real data, and leaks memory since I never trim the text in the input widget, but it gives the general idea:",,"import Tkinter as tk
 import random
 
@@ -267,109 +418,7 @@ if __name__ == ""__main__"":
     root = tk.Tk()
     Example(root).pack(fill=""both"", expand=True)
     root.mainloop()
-",1.343429417858296
-"I believe you can use dask.
-and function merge.Docs say:What definitely works?Cleverly parallelizable operations (also fast):Join on index: dd.merge(df1, df2, left_index=True, right_index=True)Or:Operations requiring a shuffle (slow-ish, unless on index)Set index: df.set_index(df.x)Join not on the index: pd.merge(df1, df2, on='name')You can also check how Create Dask DataFrames.Example",http://dask.pydata.org/en/latest/index.html http://dask.pydata.org/en/latest/dataframe-api.html?highlight=merge#dask.dataframe.core.DataFrame.merge http://dask.pydata.org/en/latest/dataframe.html#what-definitely-works http://dask.pydata.org/en/latest/dataframe-create.html,"merge
-import pandas as pd
-
-left = pd.DataFrame({'key': ['K0', 'K1', 'K2', 'K3'],
-                      'A': ['A0', 'A1', 'A2', 'A3'],
-                     'B': ['B0', 'B1', 'B2', 'B3']})
-
-
-right = pd.DataFrame({'key': ['K0', 'K1', 'K2', 'K3'],
-                      'C': ['C0', 'C1', 'C2', 'C3'],
-                      'D': ['D0', 'D1', 'D2', 'D3']})
-
-
-result = pd.merge(left, right, on='key')
-print result
-    A   B key   C   D
-0  A0  B0  K0  C0  D0
-1  A1  B1  K1  C1  D1
-2  A2  B2  K2  C2  D2
-3  A3  B3  K3  C3  D3
-
-import dask.dataframe as dd
-
-#Construct a dask objects from a pandas objects
-left1 = dd.from_pandas(left, npartitions=3)
-right1 = dd.from_pandas(right, npartitions=3)
-
-#merge on key
-print dd.merge(left1, right1, on='key').compute()
-    A   B key   C   D
-0  A3  B3  K3  C3  D3
-1  A1  B1  K1  C1  D1
-0  A2  B2  K2  C2  D2
-1  A0  B0  K0  C0  D0
-
-#first set indexes and then merge by them
-print dd.merge(left1.set_index('key').compute(), 
-               right1.set_index('key').compute(), 
-               left_index=True, 
-               right_index=True)
-      A   B   C   D
-key                
-K0   A0  B0  C0  D0
-K1   A1  B1  C1  D1
-K2   A2  B2  C2  D2
-K3   A3  B3  C3  D3
-",1.2767619761494902
-"You'll have to learn how templating works. Read this page on the docs to learn more: http://www.tornadoweb.org/en/stable/guide/templates.html#template-syntax After that, you can find the complete template syntax reference on this page: http://www.tornadoweb.org/en/stable/template.html#syntax-referenceAnyway, you can ""merge"" two templates and render them as one by using the {% include %} template tag. Example:Your Home1.html template should look roughly like this:Then render only the Home1.html from your request handler.This answer is far from perfect. You'll have to invest some time to actually learn about templates.",http://www.tornadoweb.org/en/stable/guide/templates.html#template-syntax http://www.tornadoweb.org/en/stable/template.html#syntax-reference,"{% include %}
-Home1.html
-<html>
-    <!-- do something -->
-    {% include 'Home2.html' %}
-    <!-- do something else -->
-</html>
-
-Home1.html",1.1025518402175087
-"One option would be to recreate one of the columns from table_A in table_B.I will flesh out a case. A is a DataFrame of first and last names, and you want to fill in each person's ""score.""  B is a DataFrame of scores with just one name associated - it could be the first or last.  We can use A to create a map for the ambiguous name column in B.",,"A = pd.DataFrame({'firstName': ['Adam', 'Bob', 'Charlie'],
-            'lastName': ['Axe', 'Button', 'Cobb']})
-
-# B's name column has two first names and one last name.
-B = pd.DataFrame({'name': ['Adam', 'Bob', 'Cobb'],
-                 'score': ['A', 'B', 'C']})
-
-# A mappable Series
-s = A.set_index('firstName').lastName  
-B['lastName'] = B.name.replace(s)  
-cols = ['lastName', 'score']
-A.merge(B[cols], on='lastName')
-",0.9827469641137672
-"Here you go: a fully functioning merge sort for lists (adapted from my sort here):Call it like this:For good measure, I'll throw in a couple of changes to your Obj class:",http://github.com/hughdbrown/algorithm/blob/05307be15669de0541cd4e91c03b610d440b4290/mergesort.py,"def merge(*args):
-    import copy
-    def merge_lists(left, right):
-        result = []
-        while left and right:
-            which_list = (left if left[0] <= right[0] else right)
-            result.append(which_list.pop(0))
-        return result + left + right
-    lists = list(args)
-    while len(lists) > 1:
-        left, right = copy.copy(lists.pop(0)), copy.copy(lists.pop(0))
-        result = merge_lists(left, right)
-        lists.append(result)
-    return lists.pop(0)
-
-merged_list = merge(a, b, c)
-for item in merged_list:
-    print item
-
-class Obj(object):
-    def __init__(self, p) :
-        self.points = p
-    def __cmp__(self, b) :
-        return cmp(self.points, b.points)
-    def __str__(self):
-        return ""%d"" % self.points
-
-self
-__init__()
-__cmp__
-str()
-Obj",0.9510190700852761
+",1.0,3.2694214654177594
 "This 'algorithm' tries to makes sense of the input without relying on line endings, so that it should work correctly with some input likeThe code lends itself to being integrated into a state machine - the loop only remembers its current phrase and ""pushes"" finished phrases off onto a list, and gobbles one word at a time. Splitting on whitespaces is good.Notice the ambiguity in case #5: that cannot be reliably solved (and it is possible to have such an ambiguity also with line endings. Maybe combining both...)Output:",,"born in the U.
 S.A.
 
@@ -434,106 +483,61 @@ for p in phrases:
 >> Some sentence that is spliced... and has a continuation.
 >> this cannot be confused by U.S.A. or U.S.A.
 >> In that last sentence... an abbreviation ended the sentence!
-",0.8654184960789587
-"Is there a reason you're avoiding creating some objects to manage this? If it were me, I'd go objects and do something like the following (this is completely untested, there may be typos):Now I can right code that looks like:This is just a starting point. Now you can you add methods that group (and sum) the expenditures list by decoration (e.g. ""I spent HOW MUCH on Twinkies last month???""). You can add a method that parses entries from a file, or emits them to a csv list. You can do some charting based on time.",,"#!/usr/bin/env python3
+",1.0,3.2366779538858816
+"You'll have to learn how templating works. Read this page on the docs to learn more: http://www.tornadoweb.org/en/stable/guide/templates.html#template-syntax After that, you can find the complete template syntax reference on this page: http://www.tornadoweb.org/en/stable/template.html#syntax-referenceAnyway, you can ""merge"" two templates and render them as one by using the {% include %} template tag. Example:Your Home1.html template should look roughly like this:Then render only the Home1.html from your request handler.This answer is far from perfect. You'll have to invest some time to actually learn about templates.",http://www.tornadoweb.org/en/stable/guide/templates.html#template-syntax http://www.tornadoweb.org/en/stable/template.html#syntax-reference,"{% include %}
+Home1.html
+<html>
+    <!-- do something -->
+    {% include 'Home2.html' %}
+    <!-- do something else -->
+</html>
 
-from datetime import datetime # why python guys, do you make me write code like this??
-from operator import itemgetter
+Home1.html",1.0,3.2286824408597243
+sql equivalent with where:that would translate to python as:,,"SELECT t1.company,
+        t1.resource,
+        t2.company,
+        t2.resource,
+        t1.ClockInDate,
+        t2.EffectiveFrom,
+        t2.EffectiveTo
+FROM table1 t1
+LEFT JOIN table2 t2 ON t1.resource = t2.resource
+                    AND t1.company = t2.company
+WHERE t1.ClockInDate IS NULL --no ClockInDate to check
+    OR t2.company IS NULL AND t2.resource IS NULL --not rows in t2 for t1
+    OR t1.ClockInDate BETWEEN t2.EffectiveFrom AND t2.EffectiveTo --ClockInDate exists, rows in t2 exist, we can now check ClockInDate to be between t2.EffectiveFrom AND t2.EffectiveTo
 
-class BudgetCategory(object):
-    def __init__(self, name, allowance):
-        super().__init__()
-            self.name = name # string naming this category, e.g. 'Food'
-            self.allowance = allowance # e.g. 400.00 this month for Food
-            self.expenditures = [] # initially empty list of expenditures you've made
+df_merge = pd.merge(df1, df2, on=['Company', 'Resource'], how='left')
+df_final = df_merge[df_merge.ClockInDate.isnull() | df_merge.ClockInDate.between(df_merge.EffectiveFrom, df_merge.EffectiveTo) | df_merge.EffectiveFrom.isnull()]
+",1.0,3.1110967619927674
+"I suggest you to use json, which is specific for JSON object manipulation. You can do something like this:where json.load() convert a string to a json object, while json.dumps() convert a json to a string. The parameter indent let you print the object in the expanded way.",,"json
+    import json
 
-    def spend(self, amount, when=None, description=None):
-        ''' Use this to add expenditures to your budget category'''
-        timeOfExpenditure = datetime.utcnow() if when is None else when #optional argument for time of expenditure
-        record = (amount, timeOfExpenditure, '' if description is None else description) # a named tuple would be better here...
-        self.expenditures.append(record) # add to list of expenditures
-        self.expenditures.sort(key=itemgetter(1)) # keep them sorted by date for the fun of it
+with open('example1.json') as f:
+    data1 = json.load(f)
 
-    # Very tempting to the turn both of the following into @property decorated functions, but let's swallow only so much today, huh?
-    def totalSpent(self):
-        return sum(t[0] for t in self.expenditures)
+with open('example2.json') as f:
+    data2 = json.load(f)
 
-    def balance(self):
-        return self.allowance - self.totalSpent()
+with open('example3.json') as f:
+    data3 = json.load(f)
 
-budget = BudgetCategory(name='Food', allowance=200)
-budget.spend(5)
-budget.spend(8)
+items1 = data1[""items""]
+#print(json.dumps(items1, indent=2))
+items2 = data2[""items""]
+items3 = data3[""items""]
 
-print('total spent:', budget.totalSpent())
-print('left to go:', budget.balance())
-",0.8204413932498578
-"You're using the json module to convert the JSON file into Python objects, but you're not using the module to convert those Python objects back into JSON. Instead of this at the endtry this:(Note that this is also wrapping the all_items array in a dictionary so that you get the output you expect, otherwise the output will be a JSON array, not an object with an ""items"" key).",,"json
-textfile_merged.write(str(all_items))
+listitem = [items1, items2, items3]
+finaljson = {""items"" : []}
 
-json.dump({ ""items"": all_items }, textfile_merged)
+finaljson[""items""].append(items1)
+finaljson[""items""].append(items2)
+finaljson[""items""].append(items3)
+print(json.dumps(finaljson, indent=2))
 
-all_items
-""items""",0.7726613655851637
-"To not loose the position when inserting prediction in the missing values you can use this approach, in example:To get the complete data merged in one pandas dataframe first get the known part together:If there is no missing value would do the job.",,"# merge train part of the data into a dataframe    
-X_train = X_train.sort_index()
-    y_train = y_train.sort_index()
-    result = pd.concat([X_train,X_test])
+with open('merged_json.json', ""w"") as f:
+    f.write(json.dumps(finaljson, indent=2))
 
-# if need to convert numpy array to pandas series: 
-# prediction = pd.Series(prediction)
-
-
-# here is the magic
-result['specie'][result['specie'].isnull()] = prediction.values
-",0.7719445418117612
-"There are many ways to do this, staying in Pandas I did the following.With the file structureThis code will work, it's a little verbose for explanation but you can shorten with implementation.",,"root/  
-├── dir1/  
-│   ├── data_20170101_k   
-│   ├── data_20170102_k    
-│   ├── ...  
-├── dir2/    
-│   ├── data_20170101_k    
-│   └── data_20170101_k  
-│   └── ...   
-└── ... 
-
-import glob
-import pandas as pd
-
-CONCAT_DIR = ""/FILES_CONCAT/""
-
-# Use glob module to return all csv files under root directory. Create DF from this.
-files = pd.DataFrame([file for file in glob.glob(""root/*/*"")], columns=[""fullpath""])
-
-#    fullpath
-# 0  root\dir1\data_20170101_k.csv
-# 1  root\dir1\data_20170102_k.csv
-# 2  root\dir2\data_20170101_k.csv
-# 3  root\dir2\data_20170102_k.csv
-
-# Split the full path into directory and filename
-files_split = files['fullpath'].str.rsplit(""\\"", 1, expand=True).rename(columns={0: 'path', 1:'filename'})
-
-#    path       filename
-# 0  root\dir1  data_20170101_k.csv
-# 1  root\dir1  data_20170102_k.csv
-# 2  root\dir2  data_20170101_k.csv
-# 3  root\dir2  data_20170102_k.csv
-
-# Join these into one DataFrame
-files = files.join(files_split)
-
-#    fullpath                       path        filename
-# 0  root\dir1\data_20170101_k.csv  root\dir1   data_20170101_k.csv
-# 1  root\dir1\data_20170102_k.csv  root\dir1   data_20170102_k.csv
-# 2  root\dir2\data_20170101_k.csv  root\dir2   data_20170101_k.csv
-# 3  root\dir2\data_20170102_k.csv  root\dir2   data_20170102_k.csv
-
-# Iterate over unique filenames; read CSVs, concat DFs, save file
-for f in files['filename'].unique():
-    paths = files[files['filename'] == f]['fullpath'] # Get list of fullpaths from unique filenames
-    dfs = [pd.read_csv(path, header=None) for path in paths] # Get list of dataframes from CSV file paths
-    concat_df = pd.concat(dfs) # Concat dataframes into one
-    concat_df.to_csv(CONCAT_DIR + f) # Save dataframe
-",0.6970661387363121
+json.load()
+json.dumps()
+indent",1.0,3.0964249189166226

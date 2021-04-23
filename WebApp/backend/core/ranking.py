@@ -21,14 +21,14 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
 from scipy.spatial import distance
 
-from .relevant_questions import rel_questions
+from core.relevant_questions import rel_questions
 
 stop_words = stopwords.words('english')
 stemmer = PorterStemmer()
 lemmatizer = WordNetLemmatizer()
 
 # %%
-#rel_que = pd.read_csv('../../../data/relevant_questions.csv')
+rel_que = pd.read_csv('../../data/relevant_questions.csv')
 ans = pd.read_csv('../../data/keyword_answer.csv')
 kdf = pd.read_csv('../../data/keywords.csv')
 
@@ -73,13 +73,16 @@ def get_dataframe(topic_list):
 
 # %%
 def cosine_score(question, answer):
-    sentences = [question, answer]
-    vectorizer = CountVectorizer()
-    vector = vectorizer.fit_transform(sentences)
-    text1 = vector.toarray()[0].tolist()
-    text2 = vector.toarray()[1].tolist()
-    cosc = 1-distance.cosine(text1, text2)
-    return cosc
+    if(type(answer) == type(0.0)):
+        return 0
+    else:
+        sentences = [question, answer]
+        vectorizer = CountVectorizer()
+        vector = vectorizer.fit_transform(sentences)
+        text1 = vector.toarray()[0].tolist()
+        text2 = vector.toarray()[1].tolist()
+        cosc = 1-distance.cosine(text1, text2)
+        return cosc
     
 def entropy(text, tfidf_dict):
     if(type(text) == type(0.0)):
@@ -94,12 +97,23 @@ def entropy(text, tfidf_dict):
                 entropy = entropy + 0.0
         return entropy
 
+def query_sim_score(query, answer):
+    score = 0
+    if(type(answer) == type(0.0)):
+        return 0
+    else:
+        query = query
+        for q in query:
+            if(q in answer):
+                score =  score + 1
+        score = score/len(query)
+        return score
+
 # %%
 def text_process(text):
     if(type(text) != type(0.0)):
         text = text.lower()
-        text = text.translate(str.maketrans("", "", string.punctuation))
-        text = re.sub(r'[0-9]', ' ', text)
+        text = re.sub("[^a-z]", " ", text)
         text = text.strip()
         token = word_tokenize(text)
         text = [i for i in token if not i in stop_words]
@@ -112,7 +126,7 @@ def text_process(text):
         text = " ".join(text)
     return text
 # %%
-def score(user_score, cosine_score, entropy_score, min_user_score, max_user_score, min_cosine_score, max_cosine_score, min_entropy_score, max_entropy_score):
+def score(user_score, cosine_score, entropy_score, sim_score, min_user_score, max_user_score, min_cosine_score, max_cosine_score, min_entropy_score, max_entropy_score):
     if(min_user_score == max_user_score):
         user_score = user_score - min_user_score
     else:
@@ -127,7 +141,7 @@ def score(user_score, cosine_score, entropy_score, min_user_score, max_user_scor
         entropy_score = entropy_score - min_entropy_score
     else:
         entropy_score = ((entropy_score - min_entropy_score)/(max_entropy_score - min_entropy_score))
-    return (user_score + cosine_score + entropy_score)
+    return (user_score + cosine_score + entropy_score + 2 * sim_score)
 
 # %%
 def ranking(query):
@@ -147,17 +161,18 @@ def ranking(query):
 
     rel_ans[topics] = rel_ans['topic list'].apply(get_dataframe)
     rel_ans.drop(columns=['topic list', 'id'], inplace = True)
+    rel_ans['answer list'] = rel_ans['answer'] + rel_ans['code']
 
     que_ans = pd.DataFrame()
     for i in enumerate(rel_que['id']):
         que_ans = pd.concat([df[df['id'] == i[1]], que_ans])
 
     que_ans['body'] = que_ans['body'].apply(extract_text)
-    que_ans['question'] = que_ans['title'] + que_ans['body']
+    que_ans['question list'] = que_ans['title'] + que_ans['body']
     que_ans.drop(columns=['title', 'body'], axis=1, inplace = True)
 
-    que_ans['question list'] = que_ans['question'].apply(text_process)
-    rel_ans['answer list'] = rel_ans['answer'].apply(text_process)
+    que_ans['question list'] = que_ans['question list'].apply(text_process)
+    rel_ans['answer list'] = rel_ans['answer list'].apply(text_process)
 
     data = rel_ans.join(que_ans)
 
@@ -175,18 +190,20 @@ def ranking(query):
         tfidf_dict[words[i]] = tfidf_array[i]
 
     topics_data = []
-
+    
     for topic in topics:
         topic_data = data[data[topic]==1][['id', 'answer', 'link', 'code', 'score', 'answer list', 'question list']]
+        topic_data.dropna()
         topic_df = pd.DataFrame()
         for i in range(0, topic_data.shape[0]):
             cosc = cosine_score(topic_data.iloc[i]['question list'], topic_data.iloc[i]['answer list'])
             entro = entropy(topic_data.iloc[i]['answer list'], tfidf_dict)
-            topic_df = topic_df.append(pd.Series([topic_data.iloc[i]['id'], topic_data.iloc[i]['answer'], topic_data.iloc[i]['link'], topic_data.iloc[i]['code'], topic_data.iloc[i]['score'], cosc, entro]), ignore_index=True)
+            sim_score = query_sim_score(query, topic_data.iloc[i]['answer list'])
+            topic_df = topic_df.append(pd.Series([topic_data.iloc[i]['id'], topic_data.iloc[i]['answer'], topic_data.iloc[i]['link'], topic_data.iloc[i]['code'], topic_data.iloc[i]['score'], cosc, entro, sim_score]), ignore_index=True)
         if topic_df.shape[0]==0:
             topics_data.append(topic_df)
         else:
-            topic_df.columns = ['id','answer', 'link', 'code', 'score', 'cosine score', 'entropy']
+            topic_df.columns = ['id', 'answer', 'link', 'code', 'score', 'cosine score', 'entropy','sim score']
             min_user_score = topic_df['score'].min()
             max_user_score = topic_df['score'].max()
             min_cosine_score = topic_df['cosine score'].min()
@@ -195,6 +212,7 @@ def ranking(query):
             max_entropy_score = topic_df['entropy'].max()
             scores = []
             for i in range(0, topic_df.shape[0]):
+<<<<<<< HEAD
                 scores.append(score(topic_df.iloc[i]['score'], topic_df.iloc[i]['cosine score'], topic_df.iloc[i]['entropy'], min_user_score, max_user_score, min_cosine_score, max_cosine_score, min_entropy_score, max_entropy_score))
             topic_df.drop(columns = ['score', 'cosine score', 'entropy'], inplace=True)
             topic_df['sc'] = scores
@@ -204,3 +222,17 @@ def ranking(query):
 
     return topics_data
 
+=======
+                scores.append(score(topic_df.iloc[i]['score'], topic_df.iloc[i]['cosine score'], topic_df.iloc[i]['entropy'], 
+                                    topic_df.iloc[i]['sim score'], min_user_score, max_user_score, min_cosine_score, max_cosine_score,
+                                    min_entropy_score, max_entropy_score))
+            topic_df['sc'] = scores
+            topic_df.sort_values(by = 'sc', ascending=False, inplace=True, kind='quicksort')
+            topic_df.drop(columns = ['score', 'cosine score', 'entropy', 'sim score', 'sc'], inplace=True)
+            topic_df = topic_df.head(15)
+            topics_data.append(topic_df)
+            #path = 'data/'+ topic +'.csv'
+            #topic_df = topic_df.head(15)
+            #topic_df.to_csv(path, index=False)
+    return topics_data
+>>>>>>> 10228d7afc464bfd861c256506b392f8f6438930
