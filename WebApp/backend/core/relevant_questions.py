@@ -23,8 +23,13 @@ def question_to_vec(question, embeddings, dim = 300):
         else:
             return question_embedding
 
+results = []
 
-def rel_que(query):
+def rel_questions(query):
+
+    global results
+
+    results = []
 
     # retrieving the save title embeddings
 
@@ -39,7 +44,6 @@ def rel_que(query):
 
     # process the query
 
-    query = 'merge two lists in python'
     processed_query = process_text(query)
 
     results_returned = 100 # number of results to be returned
@@ -57,6 +61,8 @@ def rel_que(query):
     polar_weight = 2
     subj_weight = 2
 
+    link = "https://stackoverflow.com/questions/"
+
     #score calculation
 
     for index, cosine_score in cosine_similarities.nlargest(results_returned).iteritems():
@@ -72,19 +78,23 @@ def rel_que(query):
             
         freq_score/=word_count
         
-        score =  (cos_weight*(cosine_score/max_cosine_score)+freq_weight*freq_score+ans_weight*data.score[index]+polar_weight*data.polarity[index]+subj_weight*data.subjectivity[index])/100
+        score = (cos_weight*(cosine_score/max_cosine_score)+freq_weight*freq_score+ans_weight*data.score[index]+polar_weight*data.polarity[index]+subj_weight*data.subjectivity[index])/100
             
         relevant_questions.append((index, data.id[index], data.title[index], score))
         
-        relevant_questions.sort(key = lambda x : x[3], reverse = True)
+    relevant_questions.sort(key = lambda x : x[3], reverse = True)
 
-        df = pd.DataFrame(relevant_questions).iloc[:,1:]
-        df.columns = ['id','questions','score']
+    for index, id, questions, score in relevant_questions:
+        results.append({
+            'question': "<a href"+ "=" + link + str(int(id)) + " target='_blank'>" + questions + "</a>",
+            'score': str(score*10)
+        })
 
-        print("hello")
+    df = pd.DataFrame(relevant_questions).iloc[:,1:]
+    df.columns = ['id','questions','score']
 
-        return df
+    return df
 
 def get_rel_que(query):
-    results = rel_que(query)
-    return results
+    rel_questions(query)
+    return results[0:20]
