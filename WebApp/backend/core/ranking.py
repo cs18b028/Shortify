@@ -21,7 +21,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
 from scipy.spatial import distance
 
-from .relevant_questions import get_rel_que
+from .relevant_questions import rel_questions
 
 stop_words = stopwords.words('english')
 stemmer = PorterStemmer()
@@ -131,8 +131,7 @@ def score(user_score, cosine_score, entropy_score, min_user_score, max_user_scor
 
 # %%
 def ranking(query):
-
-    rel_que = get_rel_que(query)
+    rel_que = rel_questions(query)
     query = text_process(query)
 
     ans['ans length'] = ans['answer'].apply(length_text)
@@ -184,27 +183,24 @@ def ranking(query):
             cosc = cosine_score(topic_data.iloc[i]['question list'], topic_data.iloc[i]['answer list'])
             entro = entropy(topic_data.iloc[i]['answer list'], tfidf_dict)
             topic_df = topic_df.append(pd.Series([topic_data.iloc[i]['id'], topic_data.iloc[i]['answer'], topic_data.iloc[i]['link'], topic_data.iloc[i]['code'], topic_data.iloc[i]['score'], cosc, entro]), ignore_index=True)
-        print(topic_df)
-        topic_df.columns = ['id','answer', 'link', 'code', 'score', 'cosine score', 'entropy']
-        min_user_score = topic_df['score'].min()
-        max_user_score = topic_df['score'].max()
-        min_cosine_score = topic_df['cosine score'].min()
-        max_cosine_score = topic_df['cosine score'].max()
-        min_entropy_score = topic_df['entropy'].min()
-        max_entropy_score = topic_df['entropy'].max()
-        scores = []
-        for i in range(0, topic_df.shape[0]):
-            scores.append(score(topic_df.iloc[i]['score'], topic_df.iloc[i]['cosine score'], topic_df.iloc[i]['entropy'], min_user_score, max_user_score, min_cosine_score, max_cosine_score, min_entropy_score, max_entropy_score))
-        topic_df.drop(columns = ['score', 'cosine score', 'entropy'], inplace=True)
-        topic_df['sc'] = scores
-        topic_df.sort_values(by = 'sc', ascending=False, inplace=True, kind='quicksort')
-        topic_df = topic_df.head(15)
-        topics_data.append(topic_df)
-        #print(topic_df)
-        #path = 'data/'+ topic +'.csv'
-        #topic_df.to_csv(path, index=False)
+        if topic_df.shape[0]==0:
+            topics_data.append(topic_df)
+        else:
+            topic_df.columns = ['id','answer', 'link', 'code', 'score', 'cosine score', 'entropy']
+            min_user_score = topic_df['score'].min()
+            max_user_score = topic_df['score'].max()
+            min_cosine_score = topic_df['cosine score'].min()
+            max_cosine_score = topic_df['cosine score'].max()
+            min_entropy_score = topic_df['entropy'].min()
+            max_entropy_score = topic_df['entropy'].max()
+            scores = []
+            for i in range(0, topic_df.shape[0]):
+                scores.append(score(topic_df.iloc[i]['score'], topic_df.iloc[i]['cosine score'], topic_df.iloc[i]['entropy'], min_user_score, max_user_score, min_cosine_score, max_cosine_score, min_entropy_score, max_entropy_score))
+            topic_df.drop(columns = ['score', 'cosine score', 'entropy'], inplace=True)
+            topic_df['sc'] = scores
+            topic_df.sort_values(by = 'sc', ascending=False, inplace=True, kind='quicksort')
+            topic_df = topic_df.head(15)
+            topics_data.append(topic_df)
 
     return topics_data
 
-
-# %%
