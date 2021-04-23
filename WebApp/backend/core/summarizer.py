@@ -3,7 +3,10 @@ import math
 import string
 import re
 import nltk
+import pandas as pd
 from .ranking import ranking
+
+kdf = pd.read_csv('../../data/keywords.csv')
 
 class sentence:
     
@@ -220,6 +223,8 @@ def summarizer(query):
 
     summaries = []
 
+    topic_num = 0
+
     for topic in topic_ans:
 
         answers = topic[["id", "answer"]].values.tolist()
@@ -242,12 +247,21 @@ def summarizer(query):
         for sent in summary:
             final_summary = final_summary + "<a href"+ "=" + link + str(int(sent.getId())) + " target='_blank'>" + sent.getOriginalWords() + " </a> "
         final_summary = final_summary[:-1]
+
+        topic_keyword = kdf['Keywords'].iloc[topic_num]
+        topic_keyword = topic_keyword[1:-1]
+        topic_keyword = topic_keyword.split(', ')
+        keyword_list = []
+        for keyword in topic_keyword:
+            keyword = keyword[1:-1]
+            keyword_list.append(keyword)
+        keyword = (', ').join(keyword_list)
         
         summaries.append({
-            'topic': 'python, lists, merge sort',
+            'topic': keyword,
             'summary': final_summary
         })
-        print(summaries)
-        print("--------------------------------------------------------------------------------------")
+
+        topic_num = topic_num + 1
 
     return summaries
