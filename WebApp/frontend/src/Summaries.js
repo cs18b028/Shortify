@@ -6,11 +6,13 @@ import FormControl from 'react-bootstrap/FormControl';
 import Navbar from 'react-bootstrap/Navbar';
 import Nav from 'react-bootstrap/Nav';
 import Card from 'react-bootstrap/Card';
+import Spinner from 'react-bootstrap/Spinner';
 import ReactHtmlParser from 'react-html-parser';
 import {NavLink} from 'react-router-dom'
 
 function Summaries() {
 
+  const [submitted, setSubmitted] = useState(false);
   const [query, setQuery] = useState('');
   const [searchresults, setSearchResults] = useState([]);
 
@@ -23,15 +25,18 @@ function Summaries() {
       })
         .then((response) => {
           setSearchResults(response.data.results);
+          setSubmitted(false);
         });
     }
     catch (e) {
+      setSubmitted(false);
       console.log('Error: ' + e)
     }
   }
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    setSubmitted(true);
     setSearchResults([])
     fetchdata();
   }
@@ -59,7 +64,7 @@ function Summaries() {
         </Form>
       </Navbar>
       <Card style={{ margin: '5vh 10vw 5vh 10vw', borderRadius: '1rem'}}>
-        {renderResults}
+        {(!submitted && renderResults!==0)? renderResults : <div style={{padding:'20px', margin: 'auto'}}><Spinner animation="border" /></div>}
       </Card>
     </div>
   );

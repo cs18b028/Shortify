@@ -37,6 +37,8 @@ class sentence:
                 wordFreq[word] = wordFreq[word] + 1
         return wordFreq
 
+query_words = []
+
 def processAns(id, answer):
 
     sentence_token = nltk.data.load('tokenizers/punkt/english.pickle')
@@ -46,20 +48,23 @@ def processAns(id, answer):
     porter = nltk.PorterStemmer()
 
     for line in lines:
-        originalWords = line[:]
-        line = line.strip().lower()
 
-        sent = nltk.word_tokenize(line)
+        original = nltk.word_tokenize(line[:])
 
-        stemmedSent = [re.sub(r'[^\w\s]', '', porter.stem(word)) for word in sent]
+        originalWords = ""
 
-        new_stemsent = []
+        stemmedSent = []
 
-        for word in stemmedSent:
-            if word!='':
-                new_stemsent.append(word)
-
-        stemmedSent = new_stemsent
+        for word in original:
+            new_word = re.sub(r'[^\w\s]', '', porter.stem(word.strip().lower()))
+            if new_word!='':
+                origin_word = ""
+                if new_word in query_words:
+                    origin_word = "<b>" + word + "</b>"
+                else:
+                    origin_word = word
+                originalWords = originalWords + " " + origin_word
+                stemmedSent.append(new_word)
         
         if stemmedSent != [] :
             sentences.append(sentence(id, stemmedSent, originalWords))
@@ -150,7 +155,7 @@ def buildBase(query, TF_IDF_dict, n):
     j = 0
     baseWords = []
 
-    for word in query[0].getProcessedWords():
+    for word in query.getProcessedWords():
         baseWords.append(word)
         i = i+1
         if(i>n):
@@ -225,6 +230,15 @@ def summarizer(query):
 
     topic_num = 0
 
+    query_sent_list = processAns("query", query)
+    query_sent = query_sent_list[0]
+
+    global query_words
+
+    query_words = query_sent.getProcessedWords()
+
+    print(query_words)
+
     for topic in topic_ans:
 
         answers = topic[["id", "answer"]].values.tolist()
@@ -237,11 +251,11 @@ def summarizer(query):
         IDF = IDFs(sentences)
         TF_IDF_dict = TF_IDF(sentences)
 
-        base = buildBase(processAns("query", query), TF_IDF_dict, 10)
+        base = buildBase(query_sent, TF_IDF_dict, 10)
 
         bestsent = bestSentence(sentences, base, IDF)
 
-        summary = makeSummary(sentences, bestsent, base, 100, 0, IDF)
+        summary = makeSummary(sentences, bestsent, base, 100, 0.5, IDF)
 
         final_summary = ""
         for sent in summary:
