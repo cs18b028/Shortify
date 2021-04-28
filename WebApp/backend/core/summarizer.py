@@ -289,55 +289,63 @@ def summarizer(query):
     topic_num = 0
 
     query_sent_list = processAns("query", query)
-    query_sent = query_sent_list[0] # User query sentence object
 
-    global query_words
+    try: 
+        query_sent = query_sent_list[0] # User query sentence object
 
-    query_words = query_sent.getProcessedWords() # Processed words from user query
+        global query_words
 
-    for topic in topic_ans:
+        query_words = query_sent.getProcessedWords() # Processed words from user query
 
-        answers = topic[["id", "answer"]].values.tolist()
+        for topic in topic_ans:
 
-        sentences = []
+            answers = topic[["id", "answer"]].values.tolist()
 
-        # forming sentences from all the answers in each topic
+            sentences = []
 
-        for answer in answers:
-            sentences = sentences + processAns(answer[0], answer[1])
+            # forming sentences from all the answers in each topic
+
+            for answer in answers:
+                sentences = sentences + processAns(answer[0], answer[1])
+                
+            IDF = IDFs(sentences)
+            TF_IDF_dict = TF_IDF(sentences) # Calculating the TF IDF scores for each word
+
+            base = buildBase(query_sent, TF_IDF_dict, 10) # Making the list of base words (most preferable words)
+
+            bestsent = bestSentence(sentences, base, IDF) # Best sentence
+
+            summary = makeSummary(sentences, bestsent, base, 100, 0.5, IDF) # Summary
+
+            # Filling in the summaries list with the topic related keywords and the summaries under each topic
+
+            final_summary = ""
+            for sent in summary:
+                final_summary = final_summary + "<a href"+ "=" + link + str(int(sent.getId())) + " target='_blank'>" + sent.getOriginalWords() + "</a>. "
+            final_summary = final_summary[:-1]
+
+            # Topics
+
+            topic_keyword = kdf['Keywords'].iloc[topic_num]
+            topic_keyword = topic_keyword[1:-1]
+            topic_keyword = topic_keyword.split(', ')
+            keyword_list = []
+            for keyword in topic_keyword:
+                keyword = keyword[1:-1]
+                keyword_list.append(keyword)
+            keyword = (', ').join(keyword_list)
             
-        IDF = IDFs(sentences)
-        TF_IDF_dict = TF_IDF(sentences) # Calculating the TF IDF scores for each word
+            summaries.append({
+                'topic': keyword,
+                'summary': final_summary
+            })
 
-        base = buildBase(query_sent, TF_IDF_dict, 10) # Making the list of base words (most preferable words)
+            topic_num = topic_num + 1
 
-        bestsent = bestSentence(sentences, base, IDF) # Best sentence
-
-        summary = makeSummary(sentences, bestsent, base, 100, 0.5, IDF) # Summary
-
-        # Filling in the summaries list with the topic related keywords and the summaries under each topic
-
-        final_summary = ""
-        for sent in summary:
-            final_summary = final_summary + "<a href"+ "=" + link + str(int(sent.getId())) + " target='_blank'>" + sent.getOriginalWords() + "</a>. "
-        final_summary = final_summary[:-1]
-
-        # Topics
-
-        topic_keyword = kdf['Keywords'].iloc[topic_num]
-        topic_keyword = topic_keyword[1:-1]
-        topic_keyword = topic_keyword.split(', ')
-        keyword_list = []
-        for keyword in topic_keyword:
-            keyword = keyword[1:-1]
-            keyword_list.append(keyword)
-        keyword = (', ').join(keyword_list)
-        
+    except:
         summaries.append({
-            'topic': keyword,
-            'summary': final_summary
+            'topic': "",
+            'summary': "<h5 align=\"center\">No results! Please try a different query</h5>"
         })
-
-        topic_num = topic_num + 1
 
     return summaries

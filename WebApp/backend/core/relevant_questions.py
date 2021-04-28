@@ -78,7 +78,7 @@ def rel_questions(query):
     cosine_similarities = pd.Series(cosine_similarity(query_vect, title_embeddings)[0]) # Calculate the cosine similarities
 
     relevant_questions = []
-    max_cosine_score = max(cosine_similarities)
+    max_cosine_score = max(max(cosine_similarities), 0.0001)
 
     # Weights for various factors in the similarity score
 

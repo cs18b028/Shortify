@@ -99,7 +99,10 @@ def query_sim_score(query, answer):
         for q in query:
             if(q in answer):
                 score =  score + 1
-        score = score/len(query)
+        try:
+            score = score/len(query)
+        except:
+            score = score
         return score
 
 
@@ -213,10 +216,4 @@ def ranking(query):
             topic_df.drop(columns = ['score', 'cosine score', 'entropy', 'sim score', 'sc'], inplace=True)
             topic_df = topic_df.head(15)
             topics_data.append(topic_df)
-<<<<<<< HEAD
-=======
-            #path = 'data/'+ topic +'.csv'
-            #topic_df = topic_df.head(15)
-            #topic_df.to_csv(path, index=False)
->>>>>>> 3e0f2848c1a487f521b08e24399e8864bfd2c65d
     return topics_data
