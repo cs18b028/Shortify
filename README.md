@@ -13,7 +13,7 @@ Given a query, this tool gets relevant questions from stack overflow and generat
 - To up the Flask backend (runs on localhost:5000)
 ```
 cd WebApp/backend
-pip install -r > requirements.txt
+pip install -r requirements.txt
 flask run
 ```
 - To start the React frontend (runs on localhost:3000)
