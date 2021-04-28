@@ -1,19 +1,29 @@
+######################################################################################################
+#                                                                                                    #
+#   Process Data Module                                                                              #
+#                                                                                                    #
+#   functions : tokenize, remove_punctution, remove_stopwords, normalize, process_text               #
+#                                                                                                    #
+######################################################################################################
+
+# import python libraries and modules
+
 import re
 import nltk
 import spacy
 from nltk.corpus import stopwords
 
-#process text
+# process text
 
 en = spacy.load('en_core_web_sm')
 
-#tokenizer
+# tokenizer
 
 def tokenize(text):
     tokens = en.tokenizer(text)
     return [token.text.lower() for token in tokens if not token.is_space]
 
-#remove punctuations
+# remove punctuations
 
 def remove_punctuation(words):
     new_words = []
@@ -23,7 +33,7 @@ def remove_punctuation(words):
             new_words.append(new_word)
     return new_words 
 
-#remove stop words
+# remove stop words
 
 def remove_stopwords(words):
     new_words = []

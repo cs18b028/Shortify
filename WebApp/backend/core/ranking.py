@@ -1,6 +1,3 @@
-# To add a new cell, type '# %%'
-# To add a new markdown cell, type '# %% [markdown]'
-# %%
 import numpy as np
 from numpy import nan
 import matplotlib.pyplot as plt
@@ -27,13 +24,10 @@ stop_words = stopwords.words('english')
 stemmer = PorterStemmer()
 lemmatizer = WordNetLemmatizer()
 
-# %%
-rel_que = pd.read_csv('../../data/relevant_questions.csv')
 ans = pd.read_csv('../../data/keyword_answer.csv')
 kdf = pd.read_csv('../../data/keywords.csv')
 
 
-# %%
 df1 = pd.read_csv('../../data/original_data1.csv')
 df2 = pd.read_csv('../../data/original_data2.csv')
 df3 = pd.read_csv('../../data/original_data3.csv')
@@ -42,7 +36,6 @@ df5 = pd.read_csv('../../data/original_data5.csv')
 topics = ['Topic 0', 'Topic 1', 'Topic 2', 'Topic 3', 'Topic 4', 'Topic 5', 'Topic 6', 'Topic 7']
 
 
-# %%
 def length_text(text):
     if(type(text) != type(0.0)):
         text = text.split(' ')
@@ -50,13 +43,13 @@ def length_text(text):
     else:
         return 0
 
-# %%
+
 def extract_text(text):
     soup = BeautifulSoup(text, 'lxml')
     txt = "".join([txt.text for txt in soup.find_all("p")])
     return txt
 
-# %%
+
 def get_dataframe(topic_list):
     if(type(topic_list) == type(0.0)):
         return pd.Series([0,0,0,0,0,0,0,0])
@@ -71,7 +64,7 @@ def get_dataframe(topic_list):
             tl.append(val)
         return pd.Series(tl)
 
-# %%
+
 def cosine_score(question, answer):
     if(type(answer) == type(0.0)):
         return 0
@@ -109,7 +102,7 @@ def query_sim_score(query, answer):
         score = score/len(query)
         return score
 
-# %%
+
 def text_process(text):
     if(type(text) != type(0.0)):
         text = text.lower()
@@ -125,7 +118,7 @@ def text_process(text):
             text.append(lemmatizer.lemmatize(word))
         text = " ".join(text)
     return text
-# %%
+
 def score(user_score, cosine_score, entropy_score, sim_score, min_user_score, max_user_score, min_cosine_score, max_cosine_score, min_entropy_score, max_entropy_score):
     if(min_user_score == max_user_score):
         user_score = user_score - min_user_score
@@ -143,7 +136,7 @@ def score(user_score, cosine_score, entropy_score, sim_score, min_user_score, ma
         entropy_score = ((entropy_score - min_entropy_score)/(max_entropy_score - min_entropy_score))
     return (user_score + cosine_score + entropy_score + 2 * sim_score)
 
-# %%
+
 def ranking(query):
     rel_que = rel_questions(query)
     query = text_process(query)
@@ -220,7 +213,4 @@ def ranking(query):
             topic_df.drop(columns = ['score', 'cosine score', 'entropy', 'sim score', 'sc'], inplace=True)
             topic_df = topic_df.head(15)
             topics_data.append(topic_df)
-            #path = 'data/'+ topic +'.csv'
-            #topic_df = topic_df.head(15)
-            #topic_df.to_csv(path, index=False)
     return topics_data
