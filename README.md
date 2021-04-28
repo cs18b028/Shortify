@@ -5,7 +5,7 @@ Keywords-based Summarizer
 Given a query, this tool gets relevant questions from stack overflow and generates summaries from a ranked list of answers for the retrieved questions, based on keywords along with one full crisp and informative summarized answer. For simplicity, we are restricting to queries in the python domain.
 
 ## Download and run it on your local system
-- Prequisites (latest versions of)
+- Prequisites: latest versions of
   - Node.js and npm
   - python and pip
 - Download the zip file and unzip into a folder of you preference
