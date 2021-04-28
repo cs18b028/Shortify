@@ -1,7 +1,11 @@
+// App.js
+
 import React from 'react';
 import { BrowserRouter, Route, Switch, Redirect } from "react-router-dom";
 import Summaries from "./Summaries";
 import Questions from "./Questions";
+
+// App Component
 
 function App() {
   return (
