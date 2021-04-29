@@ -1,0 +1,79 @@
+# Shortify
+Keywords-based Summarizer
+<br>
+<br>
+Given a query, this tool gets relevant questions and thier answers from stack overflow, categorizes them into different topics and generates summaries from the answers under each topic. Topics are characterized by the keywords in a set of answers. For simplicity, we are restricting to queries in the python domain.
+<br>
+<br>
+This tool is inspired from <a href="http://www.mysmu.edu/faculty/davidlo/papers/ase17-answerbot.pdf" target="_blank">AnswerBot</a>
+
+## System/Software requirements
+The entire tool has been developed on windows 10 and has been implemented as a webapp (react+flask framework). Following are the important packages used in the webapp.
+
+For flask backend
+- python 3.8.5
+- pip 21.0.1
+
+For react frontend
+- node v12.18.2
+- npm 6.14.5
+
+Jupyter Notebook(version 6.2.0) has been used for initial development.
+
+- Running the code in Jupyter Notebook also needs you to install all the python dependencies and libraries. To install them navigate to the WebApp/backend directory in cmd (windows) or terminal (linux) and then execute ```pip install -r requirements.txt```
+
+## Download and run the webapp on your local system
+- Prequisites: technologies used and their versions are specified in [System/Software requirements](#systemsoftware-requirements). It is better to get those versions to avoid compatibility issues.
+- Clone the repo or download the zip and unzip into a folder of you preference
+- Navigate to Shortify-main directory in cmd or bash and execute the following commands in this directory
+- To up the Flask backend (runs on localhost:5000)
+```
+cd WebApp/backend
+pip install -r requirements.txt
+flask run
+```
+- To start the React frontend (runs on localhost:3000)
+```
+cd WebApp/frontend
+npm install
+npm start
+```
+
+## The working app
+
+## Implemenataion details
+
+<p align="center"><img src="images/shortify.png" height="80%" width="80%"/></p>
+<p align="center">Design of the tool</p>
+The four main modules are:
+1. 'relevance question': Gives the top 100 questions which are relevant to the query. Uses similarity metrics like cosine similarity score, word frequency score, normalized answer score, polarity and subjectivity for calculating the relevance score.
+2. 'keyword generator': LDA model is implemented for this. The evaluation is done using another model called a CoherenceModel using which the optimal number of topics for our dataset is chosen. This model clusters the data into 8 topics. Each topic is represented with a set of keywords that represent the semantic structure of that topic.
+3. 'ranking': Ranks the answers in their respective topic categories and gives the top 15 answers for each topic. Uses similarity score, entropy score, user score, basing on which ranking is done.
+4. 'summarizer': MMR model is implemented for this which produces summaries of the answers produced by the 'ranking' model in their respective categories.
+
+All the above modules are implemented in Jupyter Notebook. But for the website, all these relevant files (.ipynb files) are converted to .py files and are integrated into the backend.
+
+## Folder guide
+| Folder          | Description                                                     |
+| --- | --- |
+| WebApp          | Contains all the files and folders corresponding to the website |
+| data            | Contains the relevant datasets used                             |
+| WebApp/backend  | Contains the .py files that perform the this tool tasks         |
+| WebApp/frontend | Contains the files related to the user interface of the website |
+
+## File guide
+| File                                 | Description                                                            |
+| --- | --- |
+| get_data.ipynb                       | downloads the datasets used from the stack overflow corpus             |
+| preprocessing.ipynb                  | holds the statistics of this dataset                                   |
+| process_data.ipynb                   | preprocesses the data required by the 'relevance question' module      |
+| related_questions_model.ipynb        | gives the most relevant questions for a given query                    |
+| keywords_generator.ipynb             | generates topic categories for each answer                             |
+| ranking.ipynb                        | ranks the answers corresponding to the questions relevant to the query |
+| summarizer.ipynb                     | summarizes the ranked answers                                          |
+| WebApp/backend/process_data.py       | .py file corresponding to the process_data.ipynb file                  |   
+| WebApp/backend/relevant_questions.py | .py file corresponding to the relevant_questions.ipynb file            |
+| WebApp/backend/ranking.py            | .py file corresponding to the ranking.ipynb file                       |
+| WebApp/backend/summarizer.py         | .py file corresponding to the summarizer.ipynb file                    |
+
+
