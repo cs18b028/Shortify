@@ -41,8 +41,8 @@ npm start
 
 ## The working app
 
-![](questions.gif)
-<p align="center"><img src="images/summaries.gif" height="80%" width="80%"/></p>
+![](images/questions.gif)
+![](images/summaries.gif)
 
 ## Implemenataion details
 
