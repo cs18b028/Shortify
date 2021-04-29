@@ -1,12 +1,28 @@
+######################################################################################################
+#                                                                                                    #
+#   Summarizer Module - Given a topic-wise list of ranked answers (from the ranking model) makes     #
+#   summary outof them under each topic using MMR summarizer model                                   #
+#                                                                                                    #
+#   functions : processAns, TFs, IDFs, TF_IDF, sentenceSim, buildBase, bestSentence, MMRScore,       #
+#   makeSummary, summarizer                                                                          #
+#                                                                                                    #
+#   classes : sentence                                                                               #
+#                                                                                                    #
+######################################################################################################
+
+# Importing python libraries and modules
+
 import os
 import math
 import string
 import re
 import nltk
 import pandas as pd
-from .ranking import ranking
+from core.ranking import ranking
 
-kdf = pd.read_csv('../../data/keywords.csv')
+kdf = pd.read_csv('../../data/keywords.csv') # Getting the keywords under each topic
+
+# sentence - class that is used to store the sentences for each answer and their related info
 
 class sentence:
     
@@ -16,19 +32,21 @@ class sentence:
         self.originalWords = originalWords
         self.wordFreq = self.sentWordFreq()
 
+    # Getter functions
+
     def getId(self):
-        return self.id
+        return self.id  # id to keep track of the question from which the answer is taken
 
     def getProcessedWords(self):
-        return self.processedWords
+        return self.processedWords # preprocessed words of the sentence
 
     def getOriginalWords(self):
-        return self.originalWords
+        return self.originalWords # original words of the sentence
     
     def getWordFreq(self):
-        return self.wordFreq
+        return self.wordFreq  # dictionary of word frequencies
 
-    def sentWordFreq(self):
+    def sentWordFreq(self): # function to calculate the word frequencies
         wordFreq = {}
         for word in self.processedWords:
             if word not in wordFreq.keys():
@@ -37,14 +55,16 @@ class sentence:
                 wordFreq[word] = wordFreq[word] + 1
         return wordFreq
 
-query_words = []
+
+# processAns - function to process an answer : tokenize, lowercase, punctuation removal and stemming
 
 def processAns(id, answer):
 
     sentence_token = nltk.data.load('tokenizers/punkt/english.pickle')
-    lines = sentence_token.tokenize(answer.strip())
 
-    sentences = []
+    lines = sentence_token.tokenize(answer.strip()) # Getting sentences from answer
+
+    sentences = []  # A list to store the sentence objects for each sentence in the answer
     porter = nltk.PorterStemmer()
 
     for line in lines:
@@ -53,24 +73,27 @@ def processAns(id, answer):
 
         originalWords = ""
 
-        stemmedSent = []
+        stemmedSent = []    # Stores the list of the processed words in each sentence
 
         for word in original:
-            new_word = re.sub(r'[^\w\s]', '', porter.stem(word.strip().lower()))
+            new_word = re.sub(r'[^\w\s]', '', porter.stem(word.strip().lower())) # The processing step
+
             if new_word!='':
                 origin_word = ""
                 if new_word in query_words:
-                    origin_word = "<b>" + word + "</b>"
+                    origin_word = "<b>" + word + "</b>" # Aesthetic related
                 else:
                     origin_word = word
                 originalWords = originalWords + " " + origin_word
                 stemmedSent.append(new_word)
         
         if stemmedSent != [] :
-            sentences.append(sentence(id, stemmedSent, originalWords))
+            sentences.append(sentence(id, stemmedSent, originalWords)) # Placing sentence objects in the sentences list
 
     return sentences        
 
+
+# TFs - function for TF score calculation
 
 def TFs(sentences):
     
@@ -79,6 +102,8 @@ def TFs(sentences):
     for sent in sentences:
         wordFreqs = sent.getWordFreq()
 
+        # TF for each word
+
         for word in wordFreqs.keys():
             if tfs.get(word, 0)!=0:
                 tfs[word] = tfs[word] + wordFreqs[word]
@@ -86,6 +111,9 @@ def TFs(sentences):
                 tfs[word] = wordFreqs[word]
         
     return tfs
+
+
+# IDFs - function to calculate the IDF score
 
 def IDFs(sentences):
     
@@ -111,9 +139,12 @@ def IDFs(sentences):
         except ZeroDivisionError:
             idf = 0
 
-        idfs[word] = idf
+        idfs[word] = idf    # IDF for each word
 
     return idfs
+
+
+# TF_IDF - function to calculate the TF_IDF score for each word
 
 def TF_IDF(sentences):
     tfs = TFs(sentences)
@@ -121,7 +152,7 @@ def TF_IDF(sentences):
     retval = {}
 
     for word in tfs:
-        tf_idfs = tfs[word]*idfs[word]
+        tf_idfs = tfs[word]*idfs[word] # The calulation step
 
         if retval.get(tf_idfs, None) == None:
             retval[tf_idfs] = [word]
@@ -130,21 +161,34 @@ def TF_IDF(sentences):
 
     return retval
 
+
+# sentenceSim - function to calculate the similarity between two sentences with the help of the IDF scores
+
 def sentenceSim(sentence1, sentence2, IDF):
     
     numerator = 0
     denominator = 0
 
+    # sentence2
+
     for word in sentence2.getProcessedWords():
         numerator+= sentence1.getWordFreq().get(word,0) * sentence2.getWordFreq().get(word,0) *  IDF.get(word,0) ** 2
 
+    # sentence1
+
     for word in sentence1.getProcessedWords():
         denominator+= ( sentence1.getWordFreq().get(word,0) * IDF.get(word,0) ) ** 2
+
+    # calculation of similarity
 
     try:
         return numerator / math.sqrt(denominator)
     except ZeroDivisionError:
         return float("-inf")
+
+query_words = []
+
+# buildBase - function to make a sentence that has all the processed query words and the highest TF_IDF scores
 
 def buildBase(query, TF_IDF_dict, n):
 
@@ -153,13 +197,17 @@ def buildBase(query, TF_IDF_dict, n):
 
     i = 0
     j = 0
-    baseWords = []
+    baseWords = [] # List to carry the words
+
+    # Adding processed query words
 
     for word in query.getProcessedWords():
         baseWords.append(word)
         i = i+1
         if(i>n):
             break
+
+    # Adding the highest TF_IDF scored words
 
     while(i<n):
         words = TF_IDF_dict[list(scores)[j]]
@@ -171,6 +219,8 @@ def buildBase(query, TF_IDF_dict, n):
         j = j+1
 
         return sentence("base", baseWords, baseWords)
+
+# bestSentence - function to get the sentence that has highest similarity with the base
 
 def bestSentence(sentences, base, IDF):
     best_sentence = None
@@ -188,6 +238,8 @@ def bestSentence(sentences, base, IDF):
 
     return best_sentence
 
+# MMRScore - function to calculate the MMR score
+
 def MMRScore(Si, base, Sj, lambta, IDF):
     Sim1 = sentenceSim(Si, base, IDF)
     l_expr = lambta * Sim1
@@ -197,85 +249,103 @@ def MMRScore(Si, base, Sj, lambta, IDF):
         Sim2 = sentenceSim(Si, sent, IDF)
         value.append(Sim2)
 
-    r_expr = (1-lambta)*max(value)
+    r_expr = (1-lambta)*max(value) # lambta is a hyper parameter
     MMR_SCORE = l_expr-r_expr
 
     return MMR_SCORE
 
+# makeSummary - function that makes summary based on the MMRscore
+
 def makeSummary(sentences, best_sentence, base, summary_len, lambta, IDF):
-    summary = [best_sentence]
-    sum_len = len(best_sentence.getProcessedWords())
+    summary = [best_sentence] # Start with best sentence
+    sum_len = len(best_sentence.getProcessedWords()) 
 
     while(sentences != [] and sum_len<summary_len):
         MMRval={}
 
+        # Assiging the MMR score for each sentence
+
         for sent in sentences:
             MMRval[sent] = MMRScore(sent, base, summary, lambta, IDF)
         
-        maxxer = max(MMRval, key= lambda x: MMRval[x])
+        maxxer = max(MMRval, key= lambda x: MMRval[x]) # Sorting the sentences in descending order of MMR score
         if maxxer != None:
-            summary.append(maxxer)
+            summary.append(maxxer)  # Get the sentence with max MMR score and put it in the summary
             sentences.remove(maxxer)
             sum_len += len(maxxer.getProcessedWords())
         
     return summary
 
+# summarizer - function that serves as the entry point for this modules
+
 def summarizer(query):
 
-    topic_ans = ranking(query)
+    topic_ans = ranking(query) # Getting the list of topic-wise ranked answers
 
     link = "https://stackoverflow.com/questions/"
 
-    summaries = []
+    summaries = [] # List that stores the summaries under each topic
 
     topic_num = 0
 
     query_sent_list = processAns("query", query)
-    query_sent = query_sent_list[0]
 
-    global query_words
+    try: 
+        query_sent = query_sent_list[0] # User query sentence object
 
-    query_words = query_sent.getProcessedWords()
+        global query_words
 
-    print(query_words)
+        query_words = query_sent.getProcessedWords() # Processed words from user query
 
-    for topic in topic_ans:
+        for topic in topic_ans:
 
-        answers = topic[["id", "answer"]].values.tolist()
+            answers = topic[["id", "answer"]].values.tolist()
 
-        sentences = []
+            sentences = []
 
-        for answer in answers:
-            sentences = sentences + processAns(answer[0], answer[1])
+            # forming sentences from all the answers in each topic
+
+            for answer in answers:
+                sentences = sentences + processAns(answer[0], answer[1])
+                
+            IDF = IDFs(sentences)
+            TF_IDF_dict = TF_IDF(sentences) # Calculating the TF IDF scores for each word
+
+            base = buildBase(query_sent, TF_IDF_dict, 10) # Making the list of base words (most preferable words)
+
+            bestsent = bestSentence(sentences, base, IDF) # Best sentence
+
+            summary = makeSummary(sentences, bestsent, base, 100, 0.5, IDF) # Summary
+
+            # Filling in the summaries list with the topic related keywords and the summaries under each topic
+
+            final_summary = ""
+            for sent in summary:
+                final_summary = final_summary + "<a href"+ "=" + link + str(int(sent.getId())) + " target='_blank'>" + sent.getOriginalWords() + "</a>. "
+            final_summary = final_summary[:-1]
+
+            # Topics
+
+            topic_keyword = kdf['Keywords'].iloc[topic_num]
+            topic_keyword = topic_keyword[1:-1]
+            topic_keyword = topic_keyword.split(', ')
+            keyword_list = []
+            for keyword in topic_keyword:
+                keyword = keyword[1:-1]
+                keyword_list.append(keyword)
+            keyword = (', ').join(keyword_list)
             
-        IDF = IDFs(sentences)
-        TF_IDF_dict = TF_IDF(sentences)
+            summaries.append({
+                'topic': keyword,
+                'summary': final_summary
+            })
 
-        base = buildBase(query_sent, TF_IDF_dict, 10)
+            topic_num = topic_num + 1
 
-        bestsent = bestSentence(sentences, base, IDF)
-
-        summary = makeSummary(sentences, bestsent, base, 100, 0.5, IDF)
-
-        final_summary = ""
-        for sent in summary:
-            final_summary = final_summary + "<a href"+ "=" + link + str(int(sent.getId())) + " target='_blank'>" + sent.getOriginalWords() + " </a> "
-        final_summary = final_summary[:-1]
-
-        topic_keyword = kdf['Keywords'].iloc[topic_num]
-        topic_keyword = topic_keyword[1:-1]
-        topic_keyword = topic_keyword.split(', ')
-        keyword_list = []
-        for keyword in topic_keyword:
-            keyword = keyword[1:-1]
-            keyword_list.append(keyword)
-        keyword = (', ').join(keyword_list)
-        
+    except:
         summaries.append({
-            'topic': keyword,
-            'summary': final_summary
+            'topic': "",
+            'summary': "<h5 align=\"center\">No results! Please try a different query</h5>"
         })
-
-        topic_num = topic_num + 1
 
     return summaries

@@ -1,3 +1,5 @@
+// Questions.js - displays the relevant questions, makes get req to the api route /question in the backend
+
 import React, { useState } from 'react';
 import axios from 'axios';
 import Button from 'react-bootstrap/Button';
@@ -12,9 +14,11 @@ import { NavLink } from "react-router-dom";
 
 function Questions() {
 
-  const [query, setQuery] = useState('');
-  const [submitted, setSubmitted] = useState(false);
-  const [searchresults, setSearchResults] = useState([]);
+  const [query, setQuery] = useState(''); // user query
+  const [submitted, setSubmitted] = useState(false); // submitted check
+  const [searchresults, setSearchResults] = useState([]); // results
+
+  // fetchdata - function to make the get request and set the searchresults
 
   const fetchdata = () => {
     try {
@@ -34,6 +38,8 @@ function Questions() {
     }
   }
 
+  // handle form submission
+
   const handleSubmit = (e) => {
     e.preventDefault();
     setSubmitted(true)
@@ -41,6 +47,8 @@ function Questions() {
     fetchdata();
   }
 
+  // results components
+  
   var renderResults = searchresults.map((result, i) => {
     return (
       <div  style={{padding: '10px'}}>
@@ -61,12 +69,19 @@ function Questions() {
           <Nav.Link><NavLink to="/summaries">Summaries</NavLink></Nav.Link>
         </Nav>
         <Form inline onSubmit={handleSubmit}>
-          <FormControl type="text" placeholder="Search" value={query} onChange={(e) => setQuery(e.target.value)} style={{ width: '40vw', marginRight: '1vw' }} />
+          <FormControl type="text" autoFocus placeholder="Search" value={query} onChange={(e) => setQuery(e.target.value)} style={{ width: '40vw', marginRight: '1vw' }} />
           <Button variant="outline-info" type="submit">Search</Button>
         </Form>
       </Navbar>
+      <div style={{ margin: '5vh 10vw 5vh 10vw'}}>
+        <h6 align='center'>Top 20 stackoverflow questions that are related to your query will be displayed here (with links)</h6>
+      </div>
       <Card style={{ margin: '5vh 10vw 5vh 10vw', borderRadius: '1rem' }}>
-        {(!submitted && renderResults!==0)? renderResults : <div style={{padding:'20px', margin: 'auto'}}><Spinner animation="border" /></div>}
+        {(!submitted && renderResults!==0)? renderResults :
+          <div style={{padding:'20px', margin: 'auto'}}>
+            <p align="center"><Spinner animation="border" /></p>
+            <p align="center" style={{fontWeight: 'lighter'}}>Shouldn't take more than 15 seconds</p>
+          </div>}
       </Card>
     </div>
   );
