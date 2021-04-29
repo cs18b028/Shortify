@@ -18,6 +18,9 @@ For react frontend
 - node v12.18.2
 - npm 6.14.5
 
+
+git version 2.23.0. windows
+
 Jupyter Notebook(version 6.2.0) has been used for initial development of the modules that are later modified and used in the backend. The backend carries the entire functionality of the tool while the frontend is simply for user interaction.
 
 - Running the code in Jupyter Notebook also needs you to install all the <a href="https://github.com/Bhavanasp/Shortify/blob/main/WebApp/backend/requirements.txt" target="_blank">python dependencies and libraries</a>. To install them navigate to the WebApp/backend directory in cmd (windows) or terminal (linux) and then execute ```pip install -r requirements.txt```
@@ -52,6 +55,7 @@ npm start
 ## Implemenataion details
 
 <p align="center"><img src="images/shortify.png" height="80%" width="80%" alt="High level implementation diagram of the tool"/></p>
+
 <p align="center">Design of the tool</p>
 
 There are four main modules in the tool
@@ -89,4 +93,5 @@ All the above modules are initially implemented in Jupyter Notebook module-wise.
 
 Functions in get_data, preprocessing, process_data, keywords_generator, relevant_answer_categories (.ipynb) files are simply used to get data and process and generate modified datasets. Few functions in the file relevant_questions_model.ipynb train and save word2vec model and embeddings in models folder. Thus all these functions are not included in WebApp but their results that are stored in data, models folders are used in the WebApp. Finally the summarizer.ipynb has a generic implementation while the .py counterpart is modified a bit according to the tool needs.
 
-**NOTE** For further implementation details refer the files
+**NOTE:** For further implementation details refer the files
+
