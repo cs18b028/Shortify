@@ -18,6 +18,7 @@ For react frontend
 - node v12.18.2
 - npm 6.14.5
 
+
 git version 2.23.0. windows
 
 Jupyter Notebook(version 6.2.0) has been used for initial development of the modules that are later modified and used in the backend. The backend carries the entire functionality of the tool while the frontend is simply for user interaction.
@@ -51,9 +52,10 @@ npm start
 
 ![Summaries gif](images/summaries.gif)
 
-## Implementation details
+## Implemenataion details
 
-<p align="center"><img src="images/shortify.png" height="80%" width="80%" alt="high-level design"/></p>
+<p align="center"><img src="images/shortify.png" height="80%" width="80%" alt="High level implementation diagram of the tool"/></p>
+
 <p align="center">Design of the tool</p>
 
 There are four main modules in the tool
@@ -82,7 +84,8 @@ All the above modules are initially implemented in Jupyter Notebook module-wise.
 | related_questions_model.ipynb        | gives the most relevant questions for a given query                    |
 | keywords_generator.ipynb             | generates topic categories for each answer                             |
 | ranking.ipynb                        | ranks the answers corresponding to the questions relevant to the query under each topic |
-| summarizer.ipynb                     | generates summaries                                                   |
+| summarizer.ipynb                     | generates summaries                                                    |
+| relevant_answer_categories.ipynb     | holds the data of the answers corresponding to the questions relevant to the query      |
 | WebApp/backend/process_data.py       | .py file corresponding to the process_data.ipynb file                  |   
 | WebApp/backend/relevant_questions.py | .py file corresponding to the relevant_questions_model.ipynb file      |
 | WebApp/backend/ranking.py            | .py file corresponding to the ranking.ipynb file                       |
@@ -91,3 +94,4 @@ All the above modules are initially implemented in Jupyter Notebook module-wise.
 Functions in get_data, preprocessing, process_data, keywords_generator, relevant_answer_categories (.ipynb) files are simply used to get data and process and generate modified datasets. Few functions in the file relevant_questions_model.ipynb train and save word2vec model and embeddings in models folder. Thus all these functions are not included in WebApp but their results that are stored in data, models folders are used in the WebApp. Finally the summarizer.ipynb has a generic implementation while the .py counterpart is modified a bit according to the tool needs.
 
 **NOTE:** For further implementation details refer the files
+
