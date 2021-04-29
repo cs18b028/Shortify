@@ -10,6 +10,7 @@ The entire tool has been developed on windows 10 and has been implemented as a w
 For flask backend
 - python 3.8.5
 - pip 21.0.1
+<br>
 For react frontend
 - node v12.18.2
 - npm 6.14.5
