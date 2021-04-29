@@ -45,9 +45,6 @@ npm start
 
 <p align="center"><img src="images/shortify.png" height="80%" width="80%"/></p>
 <p align="center">Design of the tool</p>
-
-<br>
-<br>
 The four main modules are:
 1. 'relevance question': Gives the top 100 questions which are relevant to the query. Uses similarity metrics like cosine similarity score, word frequency score, normalized answer score, polarity and subjectivity for calculating the relevance score.
 2. 'keyword generator': LDA model is implemented for this. The evaluation is done using another model called a CoherenceModel using which the optimal number of topics for our dataset is chosen. This model clusters the data into 8 topics. Each topic is represented with a set of keywords that represent the semantic structure of that topic.
@@ -55,8 +52,6 @@ The four main modules are:
 4. 'summarizer': MMR model is implemented for this which produces summaries of the answers produced by the 'ranking' model in their respective categories.
 <br>
 All the above modules are implemented in Jupyter Notebook. But for the website, all these relevant files (.ipynb files) are converted to .py files and are integrated into the backend.
-<br>
-<br>
 
 ## Folder guide
 | Folder          | Description                                                     |
