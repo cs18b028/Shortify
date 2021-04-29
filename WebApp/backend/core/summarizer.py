@@ -328,16 +328,9 @@ def summarizer(query):
             # Topics
 
             topic_keyword = kdf['Keywords'].iloc[topic_num]
-            topic_keyword = topic_keyword[1:-1]
-            topic_keyword = topic_keyword.split(', ')
-            keyword_list = []
-            for keyword in topic_keyword:
-                keyword = keyword[1:-1]
-                keyword_list.append(keyword)
-            keyword = (', ').join(keyword_list)
             
             summaries.append({
-                'topic': keyword,
+                'topic': topic_keyword,
                 'summary': final_summary
             })
 

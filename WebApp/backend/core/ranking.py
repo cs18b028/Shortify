@@ -3,11 +3,12 @@
 #   Ranking Module - Given a dataframe of relevant questions, their corresponding answers are ranked #
 #   using few score metrics and the top 15 questions of each topic are returned as a list            #
 #                                                                                                    #
-#   functions :  get_dataframeIDFs, TF_IDF, sentenceSim, buildBase, bestSentence, MMRScore,          #
-#   makeSummary, summarizer                                                                          #                                                                       #
+#   functions :  length_text, get_dataframe, cosine_score, entropy, query_sim_score, text_process    #
+#   score, ranking                                                                                   #                                                                       #
 #                                                                                                    #
 ######################################################################################################
 
+#importing the required libraries
 import numpy as np
 from numpy import nan
 import matplotlib.pyplot as plt
@@ -30,16 +31,17 @@ from scipy.spatial import distance
 
 from core.relevant_questions import rel_questions
 
+#loading the stopwords and creating instances for stemmer and lemmatiser
 stop_words = stopwords.words('english')
 stemmer = PorterStemmer()
 lemmatizer = WordNetLemmatizer()
 
-#'rel_que' dataframe contains the questions that are relevant to the query which is the output of relevant questions model
-rel_que = pd.read_csv('data/relevant_questions.csv')
+#importing the datasets
+
 #'ans' dataframe contains all the answers with their topics
-ans = pd.read_csv('data/keyword_answer.csv')
+ans = pd.read_csv('../../data/keyword_answer.csv')
 #'kdf' dataframe contains the data of keywords for each topic
-kdf = pd.read_csv('data/keywords.csv')
+kdf = pd.read_csv('../../data/keywords.csv')
 
 
 topics = ['Topic 0', 'Topic 1', 'Topic 2', 'Topic 3', 'Topic 4', 'Topic 5', 'Topic 6', 'Topic 7']
@@ -52,13 +54,6 @@ def length_text(text):
         return len(text)
     else:
         return 0
-
-
-def extract_text(text):
-    soup = BeautifulSoup(text, 'lxml')
-    txt = "".join([txt.text for txt in soup.find_all("p")])
-    return txt
-
 
 #Gives one-hot encoding of the topics for the answers
 def get_dataframe(topic_list):
@@ -163,28 +158,31 @@ def ranking(query):
     rel_ans = pd.DataFrame()
     for i in enumerate(rel_que['id']):
         rel_ans = pd.concat([ans[ans['id'] == i[1]], rel_ans])
+    rel_ans['ans length'] = rel_ans['answer'].apply(length_text)
 
     rel_ans[topics] = rel_ans['topic list'].apply(get_dataframe)
-    rel_ans.drop(columns=['topic list', 'id'], inplace = True)
-    rel_ans['answer list'] = rel_ans['answer'] + rel_ans['code']
+    rel_ans.drop(columns=['topic list'], inplace = True)
+    rel_ans['answer list'] = rel_ans['answer']
 
-    rel_ans['title'] = rel_que['questions']
-    rel_ans['question list'] = rel_ans['title'] + rel_ans['body']
+    rel_que.drop(columns=['score'], axis=1, inplace = True)
+    rel_ans = rel_ans.merge(rel_que, how='left', left_on='id', right_on='id')
+    rel_ans['question list'] = rel_ans['questions'] + rel_ans['body']
     rel_ans.drop(columns=['body'], axis=1, inplace = True)
 
     #answers and questions are of 'rel_ans' dataframe are preprocessed
     rel_ans['question list'] = rel_ans['question list'].apply(text_process)
     rel_ans['answer list'] = rel_ans['answer list'].apply(text_process)
 
-    data = rel_ans.join(que_ans)
-
-    docs = data['answer list'].dropna().tolist()
+    #calculates the frequency of words
+    docs = rel_ans['answer list'].dropna().tolist()
     cv = CountVectorizer(stop_words = stop_words)
     word_count_vector = cv.fit_transform(docs)
 
+    #calculates the tfidf score of each word
     tfidf_transformer = TfidfTransformer(smooth_idf=True,use_idf=True)
     tfidf_transformer.fit_transform(word_count_vector)
 
+    #produces a dictionary of each word with its tfidf score where the word is the key and tfidf score of the word is the value
     tfidf_array = tfidf_transformer.idf_
     words = cv.get_feature_names()
     tfidf_dict = {}
@@ -192,20 +190,22 @@ def ranking(query):
         tfidf_dict[words[i]] = tfidf_array[i]
 
     topics_data = []
-    
+
+    #produces a dataframe of the top 15 answers in each topic
     for topic in topics:
-        topic_data = data[data[topic]==1][['id', 'answer', 'link', 'code', 'score', 'answer list', 'question list']]
+        topic_data = rel_ans[rel_ans[topic]==1][['id', 'answer', 'score', 'answer list', 'questions', 'question list']]
         topic_data.dropna()
+        entropy_score = []
         topic_df = pd.DataFrame()
         for i in range(0, topic_data.shape[0]):
             cosc = cosine_score(topic_data.iloc[i]['question list'], topic_data.iloc[i]['answer list'])
             entro = entropy(topic_data.iloc[i]['answer list'], tfidf_dict)
             sim_score = query_sim_score(query, topic_data.iloc[i]['answer list'])
-            topic_df = topic_df.append(pd.Series([topic_data.iloc[i]['id'], topic_data.iloc[i]['answer'], topic_data.iloc[i]['link'], topic_data.iloc[i]['code'], topic_data.iloc[i]['score'], cosc, entro, sim_score]), ignore_index=True)
+            topic_df = topic_df.append(pd.Series([topic_data.iloc[i]['id'], topic_data.iloc[i]['questions'], topic_data.iloc[i]['answer'], topic_data.iloc[i]['score'], cosc, entro, sim_score]), ignore_index=True)
         if topic_df.shape[0]==0:
             topics_data.append(topic_df)
         else:
-            topic_df.columns = ['id', 'answer', 'link', 'code', 'score', 'cosine score', 'entropy','sim score']
+            topic_df.columns = ['id', 'question', 'answer', 'score', 'cosine score', 'entropy','sim score']
             min_user_score = topic_df['score'].min()
             max_user_score = topic_df['score'].max()
             min_cosine_score = topic_df['cosine score'].min()
