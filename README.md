@@ -41,7 +41,12 @@ npm start
 
 ## The working app
 
+### Relevant Questions
+
 ![](images/questions.gif)
+
+### Summaries
+
 ![](images/summaries.gif)
 
 ## Implemenataion details
