@@ -80,7 +80,8 @@ All the above modules are initially implemented in Jupyter Notebook module-wise.
 | related_questions_model.ipynb        | gives the most relevant questions for a given query                    |
 | keywords_generator.ipynb             | generates topic categories for each answer                             |
 | ranking.ipynb                        | ranks the answers corresponding to the questions relevant to the query under each topic |
-| summarizer.ipynb                     | generates summaries                                                   |
+| summarizer.ipynb                     | generates summaries                                                    |
+| relevant_answer_categories.ipynb     | holds the data of the answers corresponding to the questions relevant to the query      |
 | WebApp/backend/process_data.py       | .py file corresponding to the process_data.ipynb file                  |   
 | WebApp/backend/relevant_questions.py | .py file corresponding to the relevant_questions_model.ipynb file      |
 | WebApp/backend/ranking.py            | .py file corresponding to the ranking.ipynb file                       |
