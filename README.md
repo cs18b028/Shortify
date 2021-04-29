@@ -84,7 +84,7 @@ All the above modules are initially implemented in Jupyter Notebook module-wise.
 | WebApp/backend/process_data.py       | .py file corresponding to the process_data.ipynb file                  |   
 | WebApp/backend/relevant_questions.py | .py file corresponding to the relevant_questions_model.ipynb file      |
 | WebApp/backend/ranking.py            | .py file corresponding to the ranking.ipynb file                       |
-| WebApp/backend/summarizer.py         | .py file corresponding to the summarizer.ipynb file                    |
+| #[WebApp/backend/summarizer.py](WebApp/backend/summarizer.py)         | .py file corresponding to the summarizer.ipynb file                    |
 
 Functions in get_data, preprocessing, process_data, keywords_generator, relevant_answer_categories (.ipynb) files are simply used to get data and process and generate modified datasets. Few functions in the file relevant_questions_model.ipynb train and save word2vec model and embeddings in models folder. Thus all these functions are not included in WebApp but their results that are stored in data, models folders are used in the WebApp. Finally the summarizer.ipynb has a generic implementation while the .py counterpart is modified a bit according to the tool needs.
 
