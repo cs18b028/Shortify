@@ -43,15 +43,15 @@ npm start
 
 ### Relevant Questions
 
-![](images/questions.gif)
+![Relevant Questions gif](images/questions.gif)
 
 ### Summaries
 
-![](images/summaries.gif)
+![Summaries gif](images/summaries.gif)
 
 ## Implemenataion details
 
-<p align="center"><img src="images/shortify.png" height="80%" width="80%"/></p>
+<p align="center"><img src="images/shortify.png" height="80%" width="80%" alt="High level implementation diagram of the tool"/></p>
 <p align="center">Design of the tool</p>
 
 There are four main modules in the tool
