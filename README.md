@@ -43,11 +43,11 @@ npm start
 
 ### Relevant Questions
 
-![Unable to load questions.gif]()
+![Relevant Questions gif](images/questions.gif)
 
 ### Summaries
 
-![](images/summaries.gif)
+![Summaries gif](images/summaries.gif)
 
 ## Implemenataion details
 
