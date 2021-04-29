@@ -51,7 +51,7 @@ npm start
 
 ## Implemenataion details
 
-<p align="center"><img src="images/shortify.png" height="80%" width="80%"/></p>
+<p align="center"><img src="images/shortify.png" height="80%" width="80%" alt="high-level design"/></p>
 <p align="center">Design of the tool</p>
 
 There are four main modules in the tool
