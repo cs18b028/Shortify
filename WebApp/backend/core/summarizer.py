@@ -56,7 +56,7 @@ class sentence:
         return wordFreq
 
 
-# processAns - function to process an answer : tokenize, lowercase, punctuation removal and stemming
+# processAns - function to process an answer : tokenize, lowercase, punctuation removal and stemming and return sentence objects
 
 def processAns(id, answer):
 
@@ -193,7 +193,7 @@ query_words = []
 def buildBase(query, TF_IDF_dict, n):
 
     scores = TF_IDF_dict.keys()
-    sorted(scores, reverse=True)
+    sorted(scores, reverse=True) # Sorting in the decreasing order og TF IDF scores
 
     i = 0
     j = 0
@@ -219,6 +219,7 @@ def buildBase(query, TF_IDF_dict, n):
         j = j+1
 
         return sentence("base", baseWords, baseWords)
+
 
 # bestSentence - function to get the sentence that has highest similarity with the base
 

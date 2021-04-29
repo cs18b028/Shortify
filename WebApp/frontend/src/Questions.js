@@ -65,7 +65,7 @@ function Questions() {
       <Navbar bg="light" variant="light" style={{ margin: '5vh 10vw 0 10vw', borderRadius: '1rem' }}>
         <Navbar.Brand style={{ margin: '0 2vw 0 3vw' }}><h3>Shortify</h3></Navbar.Brand>
         <Nav style={{ marginRight: '3vw' }}>
-          <Nav.Link><NavLink to="/questions">Questions</NavLink></Nav.Link>
+          <Nav.Link><NavLink to="/questions"><b>Questions</b></NavLink></Nav.Link>
           <Nav.Link><NavLink to="/summaries">Summaries</NavLink></Nav.Link>
         </Nav>
         <Form inline onSubmit={handleSubmit}>
@@ -74,7 +74,7 @@ function Questions() {
         </Form>
       </Navbar>
       <div style={{ margin: '5vh 10vw 5vh 10vw'}}>
-        <h6 align='center'>Top 20 stackoverflow questions that are related to your query will be displayed here (with links)</h6>
+        <h6 align='center'>Top 20 stackoverflow questions that are related to your query will be displayed here (with links). For summaries click the link in the navbar</h6>
       </div>
       <Card style={{ margin: '5vh 10vw 5vh 10vw', borderRadius: '1rem' }}>
         {(!submitted && renderResults!==0)? renderResults :

@@ -64,7 +64,7 @@ function Summaries() {
         <Navbar.Brand style={{ margin: '0 2vw 0 3vw' }}><h3>Shortify</h3></Navbar.Brand>
         <Nav style={{ marginRight: '3vw' }}>
           <Nav.Link><NavLink to="/questions">Questions</NavLink></Nav.Link>
-          <Nav.Link><NavLink to="/summaries">Summaries</NavLink></Nav.Link>
+          <Nav.Link><NavLink to="/summaries"><b>Summaries</b></NavLink></Nav.Link>
         </Nav>
         <Form inline onSubmit={handleSubmit}>
           <FormControl type="text" autoFocus placeholder="Search" value={query} onChange={(e) => setQuery(e.target.value)} style={{ width: '40vw', marginRight: '1vw'  }} />
@@ -93,7 +93,7 @@ function Summaries() {
         {(!submitted && renderResults!==0)? renderResults : 
           <div style={{padding:'20px', margin: 'auto'}}>
             <p align="center"><Spinner animation="border" /></p>
-            <p align="center" style={{fontWeight: 'lighter'}}>Shouldn't take more than 20 seconds</p>
+            <p align="center" style={{fontWeight: 'lighter'}}>Shouldn't take more than 30 seconds</p>
           </div>}
       </Card>
 
