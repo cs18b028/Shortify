@@ -44,6 +44,10 @@ npm start
 ## Implemenataion details
 
 <p align="center"><img src="images/shortify.png" height="80%" width="80%"/></p>
-<p align="center">Design of the tool</p>
+<p align="center">fig-1: Design of the tool</p>
+<br>
+This tool has four main modules and they are: relevant question retrieval
+
+
 
 ## File guide
