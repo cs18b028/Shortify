@@ -8,7 +8,8 @@
 #                                                                                                    #
 ######################################################################################################
 
-#importing the required libraries
+# importing the required libraries
+
 import numpy as np
 from numpy import nan
 import pandas as pd
@@ -29,23 +30,28 @@ from scipy.spatial import distance
 
 from core.relevant_questions import rel_questions
 
-#loading the stopwords and creating instances for stemmer and lemmatiser
+# loading the stopwords and creating instances for stemmer and lemmatiser
+
 stop_words = stopwords.words('english')
 stemmer = PorterStemmer()
 lemmatizer = WordNetLemmatizer()
 
-#importing the datasets
+# importing the datasets
 
-#'ans' dataframe contains all the answers with their topics
+# 'ans' dataframe contains all the answers with their topics
+
 ans = pd.read_csv('../../data/keyword_answer.csv')
-#'kdf' dataframe contains the data of keywords for each topic
+
+# 'kdf' dataframe contains the data of keywords for each topic
+
 kdf = pd.read_csv('../../data/keywords.csv')
 
 
 topics = ['Topic 0', 'Topic 1', 'Topic 2', 'Topic 3', 'Topic 4', 'Topic 5', 'Topic 6', 'Topic 7']
 
 
-#calculates the length of text
+# calculates the length of text
+
 def length_text(text):
     if(type(text) != type(0.0)):
         text = text.split(' ')
@@ -53,7 +59,8 @@ def length_text(text):
     else:
         return 0
 
-#Gives one-hot encoding of the topics for the answers
+# Gives one-hot encoding of the topics for the answers
+
 def get_dataframe(topic_list):
     if(type(topic_list) == type(0.0)):
         return pd.Series([0,0,0,0,0,0,0,0])
@@ -69,7 +76,8 @@ def get_dataframe(topic_list):
         return pd.Series(tl)
 
 
-#a function for similarity of the answers with their corresponding questions
+# a function for similarity of the answers with their corresponding questions
+
 def cosine_score(question, answer):
     if(type(answer) == type(0.0) or type(question) == type(0.0)):
         return 0
@@ -82,7 +90,8 @@ def cosine_score(question, answer):
         cosc = 1-distance.cosine(text1, text2)
         return cosc
 
-#a function that caluclates the sum of tfidf of each word in a text
+# a function that caluclates the sum of tfidf of each word in a text
+
 def entropy(text, tfidf_dict):
     if(type(text) == type(0.0)):
         return 0
@@ -96,7 +105,8 @@ def entropy(text, tfidf_dict):
                 entropy = entropy + 0.0
         return entropy
 
-#a function that calculates similarity with the query
+# a function that calculates similarity with the query
+
 def query_sim_score(query, answer):
     score = 0
     if(type(answer) == type(0.0)):
@@ -110,8 +120,9 @@ def query_sim_score(query, answer):
         return score
 
 
-# a text processing function which converts text into lowercase, removes any characters like numbers, punctuation, 
-# removes stopwords, stems the words and lemmatises them
+#  a text processing function which converts text into lowercase, removes any characters like numbers, punctuation, 
+#  removes stopwords, stems the words and lemmatises them
+
 def text_process(text):
     if(type(text) != type(0.0)):
         text = text.lower()                              
@@ -128,7 +139,8 @@ def text_process(text):
         text = " ".join(text)
     return text
 
-#normalises all the scores and returns their weighted sum
+# normalises all the scores and returns their weighted sum
+
 def score(user_score, cosine_score, entropy_score, sim_score, min_user_score, max_user_score, min_cosine_score, max_cosine_score, min_entropy_score, max_entropy_score):
     if(min_user_score == max_user_score):
         user_score = user_score - min_user_score
@@ -152,7 +164,8 @@ def ranking(query):
 
     ans['ans length'] = ans['answer'].apply(length_text)
 
-    #'rel_ans' dataframe contains the answers corresponding to the relevant questions to the query i.e, questions of 'rel_que' dataset
+    # 'rel_ans' dataframe contains the answers corresponding to the relevant questions to the query i.e, questions of 'rel_que' dataset
+
     rel_ans = pd.DataFrame()
     for i in enumerate(rel_que['id']):
         rel_ans = pd.concat([ans[ans['id'] == i[1]], rel_ans])
@@ -167,20 +180,24 @@ def ranking(query):
     rel_ans['question list'] = rel_ans['questions'] + rel_ans['body']
     rel_ans.drop(columns=['body'], axis=1, inplace = True)
 
-    #answers and questions are of 'rel_ans' dataframe are preprocessed
+    # answers and questions are of 'rel_ans' dataframe are preprocessed
+
     rel_ans['question list'] = rel_ans['question list'].apply(text_process)
     rel_ans['answer list'] = rel_ans['answer list'].apply(text_process)
 
-    #calculates the frequency of words
+    # calculates the frequency of words
+
     docs = rel_ans['answer list'].dropna().tolist()
     cv = CountVectorizer(stop_words = stop_words)
     word_count_vector = cv.fit_transform(docs)
 
-    #calculates the tfidf score of each word
+    # calculates the tfidf score of each word
+
     tfidf_transformer = TfidfTransformer(smooth_idf=True,use_idf=True)
     tfidf_transformer.fit_transform(word_count_vector)
 
-    #produces a dictionary of each word with its tfidf score where the word is the key and tfidf score of the word is the value
+    # produces a dictionary of each word with its tfidf score where the word is the key and tfidf score of the word is the value
+
     tfidf_array = tfidf_transformer.idf_
     words = cv.get_feature_names()
     tfidf_dict = {}
@@ -189,7 +206,8 @@ def ranking(query):
 
     topics_data = []
 
-    #produces a dataframe of the top 15 answers in each topic
+    # produces a dataframe of the top 15 answers in each topic
+
     for topic in topics:
         topic_data = rel_ans[rel_ans[topic]==1][['id', 'answer', 'score', 'answer list', 'questions', 'question list']]
         topic_data.dropna()

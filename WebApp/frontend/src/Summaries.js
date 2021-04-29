@@ -52,8 +52,8 @@ function Summaries() {
   var renderResults = searchresults.map((result, i) => {
     return (
       <div style={{padding: '10px 40px'}}>
-          <h4>{result.topic}</h4>
-          <p align="justify">{ReactHtmlParser(result.summary)}</p>
+          <h5><b>Keywords - {result.topic}</b></h5>
+          <p align="justify"><b>Summary : </b> {ReactHtmlParser(result.summary)}</p>
       </div>
     );
   });
