@@ -24,7 +24,7 @@ Jupyter Notebook(version 6.2.0) has been used for initial development of the mod
 
 ## Download and run the webapp on your local system
 - Prequisites: technologies used and their versions are specified in [System/Software requirements](#systemsoftware-requirements). It is better to get those versions to avoid compatibility issues.
-- Clone the repo or download the zip and unzip into a folder of you preference
+- Clone the repo or download the zip file and unzip into a folder of you preference
 - Navigate to Shortify-main directory in cmd or terminal or git bash and execute the following commands in this directory
 - To up the Flask backend (runs on localhost:5000)
 ```
@@ -67,12 +67,12 @@ All the above modules are initially implemented in Jupyter Notebook module-wise.
 | File                                 | Description                                                            |
 | --- | --- |
 | get_data.ipynb                       | downloads the stackoverflow public dataset from Google BigQuery        |
-| preprocessing.ipynb                  | holds the statistics of this dataset                                   |
+| preprocessing.ipynb                  | holds the statistics of the above original dataset                     |
 | process_data.ipynb                   | preprocesses the data required by the 'relevant questions' module      |
 | related_questions_model.ipynb        | gives the most relevant questions for a given query                    |
 | keywords_generator.ipynb             | generates topic categories for each answer                             |
-| ranking.ipynb                        | ranks the answers corresponding to the questions relevant to the query |
-| summarizer.ipynb                     | summarizes the ranked answers                                          |
+| ranking.ipynb                        | ranks the answers corresponding to the questions relevant to the query under each topic |
+| summarizer.ipynb                     | generates summarizes                                                   |
 | WebApp/backend/process_data.py       | .py file corresponding to the process_data.ipynb file                  |   
 | WebApp/backend/relevant_questions.py | .py file corresponding to the relevant_questions_model.ipynb file      |
 | WebApp/backend/ranking.py            | .py file corresponding to the ranking.ipynb file                       |
