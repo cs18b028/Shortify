@@ -1,3 +1,13 @@
+######################################################################################################
+#                                                                                                    #
+#   Ranking Module - Given a dataframe of relevant questions, their corresponding answers are ranked #
+#   using few score metrics and the top 15 questions of each topic are returned as a list            #
+#                                                                                                    #
+#   functions :  get_dataframeIDFs, TF_IDF, sentenceSim, buildBase, bestSentence, MMRScore,          #
+#   makeSummary, summarizer                                                                          #                                                                       #
+#                                                                                                    #
+######################################################################################################
+
 import numpy as np
 from numpy import nan
 import matplotlib.pyplot as plt
@@ -24,18 +34,18 @@ stop_words = stopwords.words('english')
 stemmer = PorterStemmer()
 lemmatizer = WordNetLemmatizer()
 
-ans = pd.read_csv('../../data/keyword_answer.csv')
-kdf = pd.read_csv('../../data/keywords.csv')
+#'rel_que' dataframe contains the questions that are relevant to the query which is the output of relevant questions model
+rel_que = pd.read_csv('data/relevant_questions.csv')
+#'ans' dataframe contains all the answers with their topics
+ans = pd.read_csv('data/keyword_answer.csv')
+#'kdf' dataframe contains the data of keywords for each topic
+kdf = pd.read_csv('data/keywords.csv')
 
 
-df1 = pd.read_csv('../../data/original_data1.csv')
-df2 = pd.read_csv('../../data/original_data2.csv')
-df3 = pd.read_csv('../../data/original_data3.csv')
-df4 = pd.read_csv('../../data/original_data4.csv')
-df5 = pd.read_csv('../../data/original_data5.csv')
 topics = ['Topic 0', 'Topic 1', 'Topic 2', 'Topic 3', 'Topic 4', 'Topic 5', 'Topic 6', 'Topic 7']
 
 
+#calculates the length of text
 def length_text(text):
     if(type(text) != type(0.0)):
         text = text.split(' ')
@@ -50,6 +60,7 @@ def extract_text(text):
     return txt
 
 
+#Gives one-hot encoding of the topics for the answers
 def get_dataframe(topic_list):
     if(type(topic_list) == type(0.0)):
         return pd.Series([0,0,0,0,0,0,0,0])
@@ -65,8 +76,9 @@ def get_dataframe(topic_list):
         return pd.Series(tl)
 
 
+#a function for similarity of the answers with their corresponding questions
 def cosine_score(question, answer):
-    if(type(answer) == type(0.0)):
+    if(type(answer) == type(0.0) or type(question) == type(0.0)):
         return 0
     else:
         sentences = [question, answer]
@@ -76,7 +88,8 @@ def cosine_score(question, answer):
         text2 = vector.toarray()[1].tolist()
         cosc = 1-distance.cosine(text1, text2)
         return cosc
-    
+
+#a function that caluclates the sum of tfidf of each word in a text
 def entropy(text, tfidf_dict):
     if(type(text) == type(0.0)):
         return 0
@@ -90,6 +103,7 @@ def entropy(text, tfidf_dict):
                 entropy = entropy + 0.0
         return entropy
 
+#a function that calculates similarity with the query
 def query_sim_score(query, answer):
     score = 0
     if(type(answer) == type(0.0)):
@@ -99,18 +113,17 @@ def query_sim_score(query, answer):
         for q in query:
             if(q in answer):
                 score =  score + 1
-        try:
-            score = score/len(query)
-        except:
-            score = score
+        score = score/len(query)
         return score
 
 
+# a text processing function which converts text into lowercase, removes any characters like numbers, punctuation, 
+# removes stopwords, stems the words and lemmatises them
 def text_process(text):
     if(type(text) != type(0.0)):
-        text = text.lower()
-        text = re.sub("[^a-z]", " ", text)
-        text = text.strip()
+        text = text.lower()                              
+        text = re.sub("[^a-z]", " ", text)               
+        text = text.strip()                            
         token = word_tokenize(text)
         text = [i for i in token if not i in stop_words]
         output = []
@@ -122,6 +135,7 @@ def text_process(text):
         text = " ".join(text)
     return text
 
+#normalises all the scores and returns their weighted sum
 def score(user_score, cosine_score, entropy_score, sim_score, min_user_score, max_user_score, min_cosine_score, max_cosine_score, min_entropy_score, max_entropy_score):
     if(min_user_score == max_user_score):
         user_score = user_score - min_user_score
@@ -139,18 +153,13 @@ def score(user_score, cosine_score, entropy_score, sim_score, min_user_score, ma
         entropy_score = ((entropy_score - min_entropy_score)/(max_entropy_score - min_entropy_score))
     return (user_score + cosine_score + entropy_score + 2 * sim_score)
 
-
 def ranking(query):
     rel_que = rel_questions(query)
     query = text_process(query)
 
     ans['ans length'] = ans['answer'].apply(length_text)
 
-    df = pd.concat([df1,df2,df3,df4,df5], axis=0)
-    df.drop(['Unnamed: 0'], axis=1, inplace=True)
-    df.reset_index(drop=True, inplace=True)
-    df.drop(columns=['answers', 'tags'], axis=1, inplace = True)
-
+    #'rel_ans' dataframe contains the answers corresponding to the relevant questions to the query i.e, questions of 'rel_que' dataset
     rel_ans = pd.DataFrame()
     for i in enumerate(rel_que['id']):
         rel_ans = pd.concat([ans[ans['id'] == i[1]], rel_ans])
@@ -159,15 +168,12 @@ def ranking(query):
     rel_ans.drop(columns=['topic list', 'id'], inplace = True)
     rel_ans['answer list'] = rel_ans['answer'] + rel_ans['code']
 
-    que_ans = pd.DataFrame()
-    for i in enumerate(rel_que['id']):
-        que_ans = pd.concat([df[df['id'] == i[1]], que_ans])
+    rel_ans['title'] = rel_que['questions']
+    rel_ans['question list'] = rel_ans['title'] + rel_ans['body']
+    rel_ans.drop(columns=['body'], axis=1, inplace = True)
 
-    que_ans['body'] = que_ans['body'].apply(extract_text)
-    que_ans['question list'] = que_ans['title'] + que_ans['body']
-    que_ans.drop(columns=['title', 'body'], axis=1, inplace = True)
-
-    que_ans['question list'] = que_ans['question list'].apply(text_process)
+    #answers and questions are of 'rel_ans' dataframe are preprocessed
+    rel_ans['question list'] = rel_ans['question list'].apply(text_process)
     rel_ans['answer list'] = rel_ans['answer list'].apply(text_process)
 
     data = rel_ans.join(que_ans)
