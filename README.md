@@ -17,7 +17,7 @@ Jupyter Notebook(version 6.2.0) has been used for initial development.
 - Running the code in Jupyter Notebook also needs you to install all the python dependencies and libraries. To install them navigate to the WebApp/backend directory in cmd (windows) or terminal (linux) and then execute ```pip install -r requirements.txt```
 
 ## Download and run the webapp on your local system
-- Prequisites: technologies used and their versions are specified in System/Software requirements(#systemsoftware-requirements). It is better to get those versions to avoid compatibility issues.
+- Prequisites: technologies used and their versions are specified in [System/Software requirements](#systemsoftware-requirements). It is better to get those versions to avoid compatibility issues.
 - Clone the repo or download the zip and unzip into a folder of you preference
 - Navigate to Shortify-main directory in cmd or bash and execute the following commands in this directory
 - To up the Flask backend (runs on localhost:5000)
