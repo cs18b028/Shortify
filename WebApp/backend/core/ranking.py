@@ -11,10 +11,8 @@
 #importing the required libraries
 import numpy as np
 from numpy import nan
-import matplotlib.pyplot as plt
 import pandas as pd
 pd.options.mode.chained_assignment = None 
-from sklearn.preprocessing import OneHotEncoder
 
 from bs4 import BeautifulSoup
 
