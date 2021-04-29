@@ -41,8 +41,8 @@ npm start
 
 ## The working app
 
-<p align="center"><img src="images/questions.png" height="80%" width="80%"/></p>
-<p align="center"><img src="images/summaries.png" height="80%" width="80%"/></p>
+<p align="center"><img src="images/questions.gif" height="80%" width="80%"/></p>
+<p align="center"><img src="images/summaries.gif" height="80%" width="80%"/></p>
 
 ## Implemenataion details
 
