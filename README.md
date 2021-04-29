@@ -20,7 +20,7 @@ For react frontend
 
 Jupyter Notebook(version 6.2.0) has been used for initial development of the modules that are later modified and used in the backend. The backend carries the entire functionality of the tool while the frontend is simply for user interaction.
 
-- Running the code in Jupyter Notebook also needs you to install all the python dependencies and libraries. To install them navigate to the WebApp/backend directory in cmd (windows) or terminal (linux) and then execute ```pip install -r requirements.txt```
+- Running the code in Jupyter Notebook also needs you to install all the <a href="https://github.com/Bhavanasp/Shortify/blob/main/WebApp/backend/requirements.txt" target="_blank">python dependencies and libraries</a>. To install them navigate to the WebApp/backend directory in cmd (windows) or terminal (linux) and then execute ```pip install -r requirements.txt```
 
 ## Download and run the webapp on your local system
 - Prequisites: technologies used and their versions are specified in [System/Software requirements](#systemsoftware-requirements). It is better to get those versions to avoid compatibility issues.
@@ -72,12 +72,12 @@ All the above modules are initially implemented in Jupyter Notebook module-wise.
 | related_questions_model.ipynb        | gives the most relevant questions for a given query                    |
 | keywords_generator.ipynb             | generates topic categories for each answer                             |
 | ranking.ipynb                        | ranks the answers corresponding to the questions relevant to the query under each topic |
-| summarizer.ipynb                     | generates summarizes                                                   |
+| summarizer.ipynb                     | generates summaries                                                   |
 | WebApp/backend/process_data.py       | .py file corresponding to the process_data.ipynb file                  |   
 | WebApp/backend/relevant_questions.py | .py file corresponding to the relevant_questions_model.ipynb file      |
 | WebApp/backend/ranking.py            | .py file corresponding to the ranking.ipynb file                       |
 | WebApp/backend/summarizer.py         | .py file corresponding to the summarizer.ipynb file                    |
 
-Functions in get_data, preprocessing, process_data, keywords_generator, relevant_answer_categories (.ipynb) files are simply used to get data and process and generate modified datasets. Few functions in relevant_questions_model.ipynb train and save word2vec model and embeddings in models folder. Thus all these functions are not included in WebApp but their results that are stored in data, models folders are used in the WebApp. Finally the summarizer.ipynb has a generic implementation while the .py counterpart is modified a bit according to the tool needs
+Functions in get_data, preprocessing, process_data, keywords_generator, relevant_answer_categories (.ipynb) files are simply used to get data and process and generate modified datasets. Few functions in the file relevant_questions_model.ipynb train and save word2vec model and embeddings in models folder. Thus all these functions are not included in WebApp but their results that are stored in data, models folders are used in the WebApp. Finally the summarizer.ipynb has a generic implementation while the .py counterpart is modified a bit according to the tool needs.
 
-**NOTE:** For further implementation details refer the files
+**NOTE** For further implementation details refer the files
