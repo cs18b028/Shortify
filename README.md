@@ -5,7 +5,7 @@ Keywords-based Summarizer
 Given a query, this tool gets relevant questions from stack overflow and generates summaries from a ranked list of answers for the retrieved questions, based on keywords along with one full crisp and informative summarized answer. For simplicity, we are restricting to queries in the python domain.
 
 ## System/Software requirements
-The entire tool has been developed on windows 10. The tool has been implemented as a webapp (react+flask framework). Following are the important packages used in the webapp.
+The entire tool has been developed on windows 10 and has been implemented as a webapp (react+flask framework). Following are the important packages used in the webapp.
 
 For flask backend
 - python 3.8.5
