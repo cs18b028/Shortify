@@ -1,154 +1,203 @@
-answer,link,code,sim score,sc
-"I am assuming you want to create comment and reply(re-comment) on particular comment on detail page of Post model.You can create a View inspite of creating a CreateView for  CommentCreateView and ReCommentCreateView class and override post methodNow send ReCommentCreateForm and CommentCreateForm in context data of your DetailView class.In your comment.html you can use both variable to render form.Update your urls for all views like below.Access your post detail page using:
-  http://localhost:8000/polls/post/1/",,"Post
-View
-CreateView
-post
-class CommentCreateView(generic.View):
+id,answer,link,code,sim score,sc
+24760910.0,"You cannot have multiple colors in a label. If you want multiple colors, use a one-line Text widget, or use a canvas with a text item. Here's a quick and dirty example using a text widget. It doesn't do smooth scrolling, doesn't use any real data, and leaks memory since I never trim the text in the input widget, but it gives the general idea:",,"import Tkinter as tk
+import random
 
-   def post(self, request, *args, **kwargs):
-      form = CommentCreateForm(request.POST)
-      post = Post.objects.get(pk=kwargs['post_pk'])
-      if form.is_valid():
-        obj = form.save(commit=False)
-        obj.target = post
-        obj.save()
-      return redirect('detail', pk=post.pk)
+class Example(tk.Frame):
+    def __init__(self, parent):
+        tk.Frame.__init__(self, parent)
+        self.ticker = tk.Text(height=1, wrap=""none"")
+        self.ticker.pack(side=""top"", fill=""x"")
 
-class ReCommentCreateView(generic.View):
+        self.ticker.tag_configure(""up"", foreground=""green"")
+        self.ticker.tag_configure(""down"", foreground=""red"")
+        self.ticker.tag_configure(""event"", foreground=""black"")
 
-   def post(self, request, *args, **kwargs):
-      form = ReCommentCreateForm(request.POST)
-      comment = Comment.objects.get(pk=kwargs['comment_pk'])
-      if form.is_valid():
-        obj = form.save(commit=False)
-        obj.target = comment
-        obj.save()
-      return redirect('detail', pk=comment.target.pk)
+        self.data = [""AAPL"", ""GOOG"", ""MSFT""]
+        self.after_idle(self.tick)
 
-ReCommentCreateForm
-CommentCreateForm
-class DetailView(generic.DetailView):
-    model = Post
-    template_name = 'comment.html'
+    def tick(self):
+        symbol = self.data.pop(0)
+        self.data.append(symbol) 
 
-    def get_context_data(self, **kwargs):
-       context = super().get_context_data(**kwargs)
-       context['comment_form'] = CommentCreateForm()
-       context['recomment_form'] = ReCommentCreateForm()
-       return context 
+        n = random.randint(-1,1)
+        tag = {-1: ""down"", 0: ""even"", 1: ""up""}[n]
 
-# comment form action url should have id of post.
-<form action=""{% url 'comment' post_pk=post.id %}"" method=""post"">
-   {{comment_form}}
-   {% csrf_token %}
-   <input class=""btn btn-primary"" type=""submit"" value=""comment""> 
-</form>
+        self.ticker.configure(state=""normal"")
+        self.ticker.insert(""end"", "" %s %s"" % (symbol, n), tag)
+        self.ticker.see(""end"")
+        self.ticker.configure(state=""disabled"")
+        self.after(1000, self.tick)
 
-# re-comment form action url should have id of comment on which user is replying.
-<form action=""{% url 'recomment' comment_pk=comment.id %}"" method=""post"">
-   {{recomment_form}}
-   {% csrf_token %}
-   <input class=""btn btn-primary"" type=""submit"" value=""re-comment"">
-</form>
+if __name__ == ""__main__"":
+    root = tk.Tk()
+    Example(root).pack(fill=""both"", expand=True)
+    root.mainloop()
+",1.0,3.74562965713473
+22306340.0,"Is there a reason you're avoiding creating some objects to manage this? If it were me, I'd go objects and do something like the following (this is completely untested, there may be typos):Now I can right code that looks like:This is just a starting point. Now you can you add methods that group (and sum) the expenditures list by decoration (e.g. ""I spent HOW MUCH on Twinkies last month???""). You can add a method that parses entries from a file, or emits them to a csv list. You can do some charting based on time.",,"#!/usr/bin/env python3
 
-urlpatterns = [    
-    # Detail page of post url 
-    path('post/<int:pk>/', views.DetailView.as_view(), name='post'),
-    # CommentCreateView page url to create comment on post
-    path('comment/<int:post_pk>/', views.CommentCreateView.as_view(), name='comment'),
-    # ReCommentCreateView page url to create re-comment on comment
-    path('recomment/<int:comment_pk>/', views.ReCommentCreateView.as_view(), name='recomment'),
+from datetime import datetime # why python guys, do you make me write code like this??
+from operator import itemgetter
+
+class BudgetCategory(object):
+    def __init__(self, name, allowance):
+        super().__init__()
+            self.name = name # string naming this category, e.g. 'Food'
+            self.allowance = allowance # e.g. 400.00 this month for Food
+            self.expenditures = [] # initially empty list of expenditures you've made
+
+    def spend(self, amount, when=None, description=None):
+        ''' Use this to add expenditures to your budget category'''
+        timeOfExpenditure = datetime.utcnow() if when is None else when #optional argument for time of expenditure
+        record = (amount, timeOfExpenditure, '' if description is None else description) # a named tuple would be better here...
+        self.expenditures.append(record) # add to list of expenditures
+        self.expenditures.sort(key=itemgetter(1)) # keep them sorted by date for the fun of it
+
+    # Very tempting to the turn both of the following into @property decorated functions, but let's swallow only so much today, huh?
+    def totalSpent(self):
+        return sum(t[0] for t in self.expenditures)
+
+    def balance(self):
+        return self.allowance - self.totalSpent()
+
+budget = BudgetCategory(name='Food', allowance=200)
+budget.spend(5)
+budget.spend(8)
+
+print('total spent:', budget.totalSpent())
+print('left to go:', budget.balance())
+",1.0,3.4577291149005056
+22662996.0,"You probably meanA more concise approach (see wims answer) is to use a list comprehension, ",http://docs.python.org/2/tutorial/datastructures.html#list-comprehensions,"allArrays = np.array([])
+for x in range(0, 1000):
+    myArray = myFunction(x)
+    allArrays = np.concatenate([allArrays, myArray])
+
+allArrays = np.concatenate([myFunction(x) for x in range]) 
+",1.0,3.3742123863606923
+58276538.0,"This is perfect case for DataFrame.update, which aligns on indicesOutputNote that update is in place, as quoted from the documentation:Modify in place using non-NA values from another DataFrame.That means that your original dataframe will be updated by the new values. To prevent this, use:",https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.update.html,"DataFrame.update
+Empty_DF.update(ROI_DF)
+
+print(df3)
+
+     a    b  c
+a  0.0  5.0  0
+b  1.0  6.0  0
+c  2.0  7.0  0
+d  0.0  0.0  0
+e  3.0  8.0  0
+f  0.0  0.0  0
+
+update
+df3 = Empty_DF.copy()
+df3.update(ROI_DF)
+",0.95,3.3483837355576735
+55397854.0,"The answer to all 3 of your questions is yes, you can use stderr=subprocess.STDOUT as an argument to Popen to redirect output from stderr to stdout:",,"stderr=subprocess.STDOUT
+Popen
+stderr
+stdout
+self.process = Popen(command, stdout=PIPE, stderr=subprocess.STDOUT)
+",0.95,3.280768078486431
+44109813.0,"Why don't you try to use append, even though it is not the most elegant way ?For write files use open()
+For example, ",,"    A =
+
+    [('This', 'DT'),
+     ('shoe', 'NN'),
+     ('is', 'BEZ'),
+     ('of', 'IN'),
+     ('Blue', 'JJ-TL'),
+     ('color', 'NN'),
+     ('.', '.')]
+
+    B =
+    [('This', 'Other'),
+     ('shoe', 'Product'),
+     ('is', 'Other'),
+     ('of', 'Other'),
+     ('Blue', 'Color'),
+     ('color', 'Other'),
+     ('.', 'Other')]
+
+    Title = 
+    [('This', ),
+     ('shoe', ),
+     ('is', ),
+     ('of', ),
+     ('Blue', ),
+     ('color', ),
+     ('.', )]
+
+    for j, item in enumerate(A):
+        Title[j].append(item)
+        Title[j].append(B[j][1])
+
+    for tuple in Title:
+        line = '{0[0]} {0[1]} {0[2]}'.format(tuple)
+
+    f = open('This/is/your/destination/file.txt', 'w')
+    # Here you do something
+
+    f.write( )
+    f.close()
+",1.0,2.6873326213140407
+48926974.0,"You need to learn how to ask question.
+You should show us what you tried and what you did.
+You should try and write the algorithm yourself...Luckily for you, I was board at work so I just hacked a solution for you..
+Try it and see if it works:Good luck next time!",,"def convert_function(input):
+    output = {}
+    for val in input:
+        first_dict = output.get(val[0][0], {})
+        second_dict = first_dict.get(val[0], {})
+        third_dict = second_dict.get(val[1][0], {})
+
+        third_dict[val[1]] = val[2]
+        second_dict[val[1][0]] = third_dict
+        first_dict[val[0]] = second_dict
+
+        output[val[0][0]] = first_dict
+    return output
+
+input = [
+    ('A-1', 'B-1', 'C'), 
+    ('A-1', 'B-2', 'D'), 
+    ('A-1', 'B-3', 'E'), 
+    ('A-1', 'B-4', 'F'), 
+    ('A-1', 'B-5', 'G')
 ]
 
-http://localhost:8000/polls/post/1/",1.0,4.0
-Verified solution (using heapq.merge):Prints:On leetcode it was classified as Success (link):,https://docs.python.org/3.8/library/heapq.html#heapq.merge https://leetcode.com/submissions/detail/289269685/ https://i.stack.imgur.com/2A4zb.png,"heapq.merge
-from heapq import merge
+print convert_function(input)
+",0.95,2.508429453562804
+59513995.0,"In the above mentioned code there is a discrepancy in the logic.
+For instance:It should be Same for the second end of the list condition. That is the reason the ending value 4 is being erased. Hope this helps.",,"if(current1.val <= current.val2):
+    if(current1.next is None):
+        #this is wrong as you are skipping the present current1 val 
+        prev1.next =current2
 
-class ListNode(object):
-    def __init__(self, x):
-        self.val = x
-        self.next = None
+if(current1.val <= current.val2):
+    if(current1.next is None):
+        prev1.next = current1
+        prev1 = prev1.next
+        prev1.next =current2
 
-class Solution(object):
-    def mergeTwoLists(self, l1, l2):
-        """"""
-        :type l1: ListNode
-        :type l2: ListNode
-        :rtype: ListNode
-        """"""
+4",0.95,2.4584953961080225
+54873983.0,Good to remember that itertools.groupby handles constructiveness for us.,,"itertools.groupby
+itertools.groupby
+from itertools import groupby
 
-        def iter_list(l):
-            v = l
-            while v:
-                yield v
-                v = v.next
+Y = df.Y
+X = df.filter(like='X').T  # df.drop('Y', 1).T
+K = lambda x: (*X[x].fillna('NA'),)
 
-        def create_nodes():
-            l = ListNode(None)
-            val = yield l
-            l.val = val
-            while True:
-                val = yield
-                l.next = ListNode(val)
-                l = l.next
+tups = [
+    (' '.join(Y.loc[V]), *X[V[0]])
+    for _, [*V] in groupby(Y.index, key=K)
+]
 
-        creator = create_nodes()
-        rv = next(creator)
-        for v in merge(iter_list(l1), iter_list(l2), key=lambda k: k.val):
-            creator.send(v.val)
+pd.DataFrame(tups, columns=df.columns)
 
-        return None if rv.val is None else rv
-
- # [1,2,4] and [1,3,4]
-l1 = ListNode(1)
-l1.next = ListNode(2)
-l1.next.next = ListNode(4)
-
-l2 = ListNode(1)
-l2.next = ListNode(3)
-l2.next.next = ListNode(4)
-
-def print_list(l):
-    v = l
-    while v:
-        print(v.val)
-        v = v.next
-
-new_list_node = Solution().mergeTwoLists(l1, l2)
-print_list(new_list_node)
-
-1
-1
-2
-3
-4
-4
-
-leetcode",1.0,3.475049563730972
-"I assume you already had an object for company in current page, getting the employees is really easy:Django doc about OneToOneField.",https://docs.djangoproject.com/en/1.9/topics/db/examples/one_to_one/,"company
-employees = Employee.objects.filter(company=company)
-for employee in employees:
-    print employee.employeeprofile.first_name
-    print employee.employeeprofile.last_name
-    print employee.employeejob.employment_status
-    print employee.employeejob.employee_type
-",0.9,3.2439583871393323
-"You'll have to learn how templating works. Read this page on the docs to learn more: http://www.tornadoweb.org/en/stable/guide/templates.html#template-syntax After that, you can find the complete template syntax reference on this page: http://www.tornadoweb.org/en/stable/template.html#syntax-referenceAnyway, you can ""merge"" two templates and render them as one by using the {% include %} template tag. Example:Your Home1.html template should look roughly like this:Then render only the Home1.html from your request handler.This answer is far from perfect. You'll have to invest some time to actually learn about templates.",http://www.tornadoweb.org/en/stable/guide/templates.html#template-syntax http://www.tornadoweb.org/en/stable/template.html#syntax-reference,"{% include %}
-Home1.html
-<html>
-    <!-- do something -->
-    {% include 'Home2.html' %}
-    <!-- do something else -->
-</html>
-
-Home1.html",1.0,3.102712651059857
-"A way you could do it and which would result in cleaner code in to define a function that takes two JSON objects and return the combination of those two.Then, after you have output_list:Result will be the object you are looking for.If you're not familiar with the reduce function, check out this web page: http://book.pythontips.com/en/latest/map_filter.htmlIt briefly explains the usage of reduce, as well as map and filter. They are very useful.",http://book.pythontips.com/en/latest/map_filter.html,"def merge (json_obj_1, json_obj_2):
-    items = json_obj_1['items'] + json_obj_2['items']
-    return { 'items': items }
-
-result = reduce(merge, output_list)
-",1.0,2.7773022159247835
-"Your desired outputs are no longer really model serializers as for example you completely loose the relationships between materials and stores. You should instead consider building your own dictionary, then converting it to a custom json and just pass it as a response as explained here:
-https://stackoverflow.com/a/35019122/12197595",https://stackoverflow.com/a/35019122/12197595,,0.0,0.0
-"do you have a views.py which serves these models? you could easily use the django render function to serve all three of these models to the dom. this is a rather comprehensive, all encompassing process but I'd be more than happy to assist you ",https://docs.djangoproject.com/en/1.9/topics/http/shortcuts/#render,,0.0,0.0
+         Y  X1    X2    X3    X4    X5
+0    A B C NaN -3810  TRUE  None  None
+1  D E F G NaN -3810  None  None  None
+2        H NaN -3810  TRUE  None  None
+3        I NaN  2540  TRUE  None  None
+4        J NaN  2540  None  True  None
+",0.95,2.3431646775411292
+43794802.0,"That's the editor that is opened so that you can write the commit message. That means the merge went well, no conflicts. Just set the comment, save the file and quit and the merge revision should be done.",,,0.0,0.0

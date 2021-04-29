@@ -1,5 +1,5 @@
-answer,link,code,sim score,sc
-"I managed to do what you intended by changing your format. I convert all your sublists into dict with the key user.Because it easier to merge dict and the order of user in your sublists doesn't matter.The last steps is to iterate over the merged dict of list1 and list2 and do your special operation. As I understood, is to take the before last number of list1 and merge it with list2. Then you recreate your desired sublist.Output:EDITIt seems I make a mistake and your list1 have to check all the content of list2, in that case you should make a dict of list2 first and apply your specific condition after. eg:output:Note: we can get rid of defaultdict since the same key is not being to be added twice.",,"dict
+id,answer,link,code,sim score,sc
+46362972.0,"I managed to do what you intended by changing your format. I convert all your sublists into dict with the key user.Because it easier to merge dict and the order of user in your sublists doesn't matter.The last steps is to iterate over the merged dict of list1 and list2 and do your special operation. As I understood, is to take the before last number of list1 and merge it with list2. Then you recreate your desired sublist.Output:EDITIt seems I make a mistake and your list1 have to check all the content of list2, in that case you should make a dict of list2 first and apply your specific condition after. eg:output:Note: we can get rid of defaultdict since the same key is not being to be added twice.",,"dict
 user
 user
 dict
@@ -68,8 +68,8 @@ print(desired_output)
 
 [['user1', 186, 'Feb 2017, Mar 2017, Mai 2017', 550, 740], ['user2', 282, 'Feb 2017', 0, 1000], ['user3', 281, 'Mai 2017', 10, 0], ['user4', 288, 'Feb 2017', 60, 10]]
 
-defaultdict",1.0,3.7972958799816707
-"First off, don't feel bad as I had to test this to see why it doesn't work, and I wrote the thing.The merge() use case is one where you're taking some kind of in-application data, either from an offline cache or some locally modified structure, and moving it into a new Session.   merge() is mostly about merging changes, so when it sees attributes that have no ""change"", it assumes no special work is needed.   So it skips unloaded relationships.  If it did follow unloaded relationships, the merge process would become a very slow and burdensome operation as it traverses the full graph of relationships loading everything recursively, potentially loading a significant portion of the database into memory for a highly interlinked schema.  The ""copy from one database to another"" use case here was not anticipated.the data does go in if you just make sure all those edges are loaded ahead of time, here's a demo.   the default cascade is ""save-update, merge"" also so you don't have to specify that.",,"from sqlalchemy import create_engine, Column, String, Integer, ForeignKey
+defaultdict",1.0,3.911960755974062
+14008075.0,"First off, don't feel bad as I had to test this to see why it doesn't work, and I wrote the thing.The merge() use case is one where you're taking some kind of in-application data, either from an offline cache or some locally modified structure, and moving it into a new Session.   merge() is mostly about merging changes, so when it sees attributes that have no ""change"", it assumes no special work is needed.   So it skips unloaded relationships.  If it did follow unloaded relationships, the merge process would become a very slow and burdensome operation as it traverses the full graph of relationships loading everything recursively, potentially loading a significant portion of the database into memory for a highly interlinked schema.  The ""copy from one database to another"" use case here was not anticipated.the data does go in if you just make sure all those edges are loaded ahead of time, here's a demo.   the default cascade is ""save-update, merge"" also so you don't have to specify that.",,"from sqlalchemy import create_engine, Column, String, Integer, ForeignKey
 from sqlalchemy.orm import Session, relationship, backref, immediateload
 from sqlalchemy.ext.declarative import declarative_base
 import os
@@ -140,173 +140,89 @@ def copy(source_session):
 teardown()
 source_session = fixture()
 copy(source_session)
-",1.0,3.668870195928089
-"Your naive method sounds very reasonable; I think the time complexity of it is O(NM), where N is the number of intervals you're trying to resolve, and M is the the range over which you're trying to resolve them.  The difficulty you might have is that you also have space complexity of O(M), which might use up a fair bit of memory.Here's a method for merging without building a ""master list"", which may be faster; because it treats intervals as objects, complexity is no longer tied to M.I'll represent an interval (or list of intervals) as a set of tuples (a,b,p), each of which indicates the time points from a to b, inclusively, with the integer priority p (W can be 1, and S can be 2).  In each interval, it must be the case that a < b.  Higher priorities are preferred.We need a predicate to define the overlap between two intervals:When we find overlaps, we need to resolve them.  This method takes care of that, respecting priority:Finally, merge_intervals takes an iterable of intervals and joins them together until there are no more overlaps:I think this has worst-case time complexity of O(N^4), although the average case should be fast.  In any case, you may want to time this solution against your simpler method, to see what works better for your problem.As far as I can see, my merge_intervals works for your examples:To cover the case with blank (B) intervals, simply add another interval tuple which covers the whole range with priority 0: (1, M, 0):",,"(a,b,p)
-a
-b
-p
-W
-1
-S
-2
-a
-b
-def has_overlap(i1, i2):
-    '''Returns True if the intervals overlap each other.'''
-    (a1, b1, p1) = i1
-    (a2, b2, p2) = i2
-    A = (a1 - a2)
-    B = (b2 - a1)
-    C = (b2 - b1)
-    D = (b1 - a2)
-    return max(A * B, D * C, -A * D, B * -C) >= 0
+",1.0,3.8980041530991913
+48123619.0,"I am assuming you want to create comment and reply(re-comment) on particular comment on detail page of Post model.You can create a View inspite of creating a CreateView for  CommentCreateView and ReCommentCreateView class and override post methodNow send ReCommentCreateForm and CommentCreateForm in context data of your DetailView class.In your comment.html you can use both variable to render form.Update your urls for all views like below.Access your post detail page using:
+  http://localhost:8000/polls/post/1/",,"Post
+View
+CreateView
+post
+class CommentCreateView(generic.View):
 
-def join_intervals(i1, i2):
-    '''
-    Joins two intervals, fusing them if they are of the same priority,
-    and trimming the lower priority one if not.
+   def post(self, request, *args, **kwargs):
+      form = CommentCreateForm(request.POST)
+      post = Post.objects.get(pk=kwargs['post_pk'])
+      if form.is_valid():
+        obj = form.save(commit=False)
+        obj.target = post
+        obj.save()
+      return redirect('detail', pk=post.pk)
 
-    Invariant: the interval(s) returned by this function will not
-    overlap each other.
+class ReCommentCreateView(generic.View):
 
-    >>> join_intervals((1,5,2), (4,8,2))
-    {(1, 8, 2)}
-    >>> join_intervals((1,5,2), (4,8,1))
-    {(1, 5, 2), (6, 8, 1)}
-    >>> join_intervals((1,3,2), (4,8,2))
-    {(1, 3, 2), (4, 8, 2)}
-    '''
-    if has_overlap(i1, i2):
-        (a1, b1, p1) = i1
-        (a2, b2, p2) = i2
-        if p1 == p2:
-            # UNION
-            return set([(min(a1, a2), max(b1, b2), p1)])
-        # DIFFERENCE
-        if p2 < p1:
-            (a1, b1, p1) = i2
-            (a2, b2, p2) = i1
-        retval = set([(a2, b2, p2)])
-        if a1 < a2 - 1:
-            retval.add((a1, a2 - 1, p1))
-        if b1 > b2 + 1:
-            retval.add((b2 + 1, b1, p1))
-        return retval
-    else:
-        return set([i1, i2])
+   def post(self, request, *args, **kwargs):
+      form = ReCommentCreateForm(request.POST)
+      comment = Comment.objects.get(pk=kwargs['comment_pk'])
+      if form.is_valid():
+        obj = form.save(commit=False)
+        obj.target = comment
+        obj.save()
+      return redirect('detail', pk=comment.target.pk)
 
-merge_intervals
-import itertools
+ReCommentCreateForm
+CommentCreateForm
+class DetailView(generic.DetailView):
+    model = Post
+    template_name = 'comment.html'
 
-def merge_intervals(intervals):
-    '''Resolve overlaps in an iterable of interval tuples.'''
-    # invariant: retval contains no mutually overlapping intervals
-    retval = set()
-    for i in intervals:
-        # filter out the set of intervals in retval that overlap the
-        # new interval to add O(N)
-        overlaps = set([i2 for i2 in retval if has_overlap(i, i2)])
-        retval -= overlaps
-        overlaps.add(i)
-        # members of overlaps can potentially all overlap each other;
-        # loop until all overlaps are resolved O(N^3)
-        while True:
-            # find elements of overlaps which overlap each other O(N^2)
-            found = False
-            for i1, i2 in itertools.combinations(overlaps, 2):
-                if has_overlap(i1, i2):
-                    found = True
-                    break
-            if not found:
-                break
-            overlaps.remove(i1)
-            overlaps.remove(i2)
-            overlaps.update(join_intervals(i1, i2))
-        retval.update(overlaps)
-    return retval
+    def get_context_data(self, **kwargs):
+       context = super().get_context_data(**kwargs)
+       context['comment_form'] = CommentCreateForm()
+       context['recomment_form'] = ReCommentCreateForm()
+       return context 
 
-merge_intervals
-# example 1
-assert (merge_intervals({(5, 8, 2), (1, 5, 1), (7, 10, 1)}) ==
-        {(1, 4, 1), (5, 8, 2), (9, 10, 1)})
+# comment form action url should have id of post.
+<form action=""{% url 'comment' post_pk=post.id %}"" method=""post"">
+   {{comment_form}}
+   {% csrf_token %}
+   <input class=""btn btn-primary"" type=""submit"" value=""comment""> 
+</form>
 
-# example 2
-assert (merge_intervals({(5, 8, 2), (2, 10, 1)}) ==
-        {(2, 4, 1), (5, 8, 2), (9, 10, 1)})
+# re-comment form action url should have id of comment on which user is replying.
+<form action=""{% url 'recomment' comment_pk=comment.id %}"" method=""post"">
+   {{recomment_form}}
+   {% csrf_token %}
+   <input class=""btn btn-primary"" type=""submit"" value=""re-comment"">
+</form>
 
-0
-(1, M, 0)
-# example 3 (with B)
-assert (merge_intervals([(1, 2, 1), (5, 8, 2), (9, 10, 1),
-                         (16, 20, 2), (1, 20, 0)]) ==
-        {(1, 2, 1), (3, 4, 0), (5, 8, 2),
-         (9, 10, 1), (11, 15, 0), (16, 20, 2)})
-",1.0,3.4888325985294064
-"If I understand correctly, you want to recursively merge the nodes until there is no overlap between the edges. My idea was to start with a fully connected graph and ""recursively"" merge the nodes. Here is a 'fake' recursive implementation. EDIT: I'm not too sure why networkx is necessary here, it could be done with just dicts (maybe more clear). ",https://i.stack.imgur.com/7rS6L.png,"import networkx as nx
+urlpatterns = [    
+    # Detail page of post url 
+    path('post/<int:pk>/', views.DetailView.as_view(), name='post'),
+    # CommentCreateView page url to create comment on post
+    path('comment/<int:post_pk>/', views.CommentCreateView.as_view(), name='comment'),
+    # ReCommentCreateView page url to create re-comment on comment
+    path('recomment/<int:comment_pk>/', views.ReCommentCreateView.as_view(), name='recomment'),
+]
 
-# file you provided
-with open('temp.txt', 'r') as f:
-    lines = f.readlines()
+http://localhost:8000/polls/post/1/",1.0,3.8857960893660053
+45212537.0,"Using pandas:To get rid of duplicate rows as well:This will not get rid of duplicates as the dataframe is created, but after. So a dataframe gets created by concatenating all of the files. Then it is de-duplicated. The final dataframe can then be saved to csv.",,"import pandas as pd
 
+interesting_files = glob.glob(""/home/tcs/PYTHONMAP/test1/*.csv"") 
+df = pd.concat((pd.read_csv(f, header = 0) for f in interesting_files))
+df.to_csv(""output.csv"")
 
+import pandas as pd
 
-nodes = {}
-for idx, line in enumerate(lines):
-    authors, title, venue = line.split('<>')[1:4]
-    authors = set(authors.split(','))
-    nodes[idx] = dict(authors = authors, title = (title, ))
-
-G = nx.complete_graph(len(nodes))
-nx.set_node_attributes(G, nodes)
-
-
-def merge_recursive(G, target = 'authors'):
-    """"""
-    Keeps merging if there is overlap between nodes
-    """"""
-    # check edges
-    while G.edges():
-        for (i, j) in G.edges():
-            overlap = G.nodes()[i][target].intersection(G.nodes()[j][target])
-            # copy values
-            if overlap:
-                tmp = {}
-                for k, v in G.nodes()[i].items():
-                    if isinstance(v, set):
-                        tmp[k] = v.union(G.nodes()[j][k])
-                    else:
-                        tmp[k] = v + G.nodes()[j][k]
-
-                nx.set_node_attributes(G, {i: tmp})
-                G.remove_node(j)
-            # no overlap remove edge
-            else:
-                G.remove_edge(i, j)
-            break
-    return G
-
-merged = merge_recursive(G.copy())
-
-from matplotlib.pyplot import subplots
-
-fig, (left, right) = subplots(1, 2, figsize = (10,  5))
-nx.draw(G, ax = left, with_labels = 1)
-nx.draw(merged, ax = right, with_labels = 1)
-
-left.set_title('Before merging')
-right.set_title('After merging')
-fig.show()
-",1.0,3.3092303979759365
-"I think you need concat, but first set index of each DataFrame by common column:If need join by merge:",http://pandas.pydata.org/pandas-docs/stable/generated/pandas.concat.html http://pandas.pydata.org/pandas-docs/stable/generated/pandas.DataFrame.merge.html,"concat
-DataFrame
-dfs = [df.set_index('id') for df in dfList]
-print pd.concat(dfs, axis=1)
-
-merge
-from functools import reduce
-df = reduce(lambda df1,df2: pd.merge(df1,df2,on='id'), dfList)
-",0.9,3.269190289600415
-"You need create MultiIndex in columns first, then reshape by unstack and last reset_index:If input is file better is use parameter header for MultiIndex:",http://pandas.pydata.org/pandas-docs/stable/generated/pandas.DataFrame.unstack.html http://pandas.pydata.org/pandas-docs/stable/generated/pandas.DataFrame.reset_index.html,"MultiIndex
+interesting_files = glob.glob(""/home/tcs/PYTHONMAP/test1/*.csv"") 
+df = pd.concat((pd.read_csv(f, header = 0) for f in interesting_files))
+df_deduplicated = df.drop_duplicates()
+df_deduplicated.to_csv(""output.csv"")
+",1.0,3.7329143512430614
+43552785.0,Consider a concatenation with merge which would translate your SQL query as OR is often analogous to a UNION:,,"OR
+UNION
+pd.concat([pd.merge(table_A, table_B, on='one'),
+           pd.merge(table_A, table_B, left_on='two', right_on='one')])
+",0.95,3.363089736564874
+50480244.0,"You need create MultiIndex in columns first, then reshape by unstack and last reset_index:If input is file better is use parameter header for MultiIndex:",http://pandas.pydata.org/pandas-docs/stable/generated/pandas.DataFrame.unstack.html http://pandas.pydata.org/pandas-docs/stable/generated/pandas.DataFrame.reset_index.html,"MultiIndex
 unstack
 reset_index
 print (df)
@@ -361,69 +277,41 @@ print (df)
 3  Sales1    Feb 2000  1  8000
 4  Sales2  Month 2000  0  4000
 5  Sales2  Month 2000  1  3000
-",0.95,3.1512393503461738
-"I believe you can use dask.
-and function merge.Docs say:What definitely works?Cleverly parallelizable operations (also fast):Join on index: dd.merge(df1, df2, left_index=True, right_index=True)Or:Operations requiring a shuffle (slow-ish, unless on index)Set index: df.set_index(df.x)Join not on the index: pd.merge(df1, df2, on='name')You can also check how Create Dask DataFrames.Example",http://dask.pydata.org/en/latest/index.html http://dask.pydata.org/en/latest/dataframe-api.html?highlight=merge#dask.dataframe.core.DataFrame.merge http://dask.pydata.org/en/latest/dataframe.html#what-definitely-works http://dask.pydata.org/en/latest/dataframe-create.html,"merge
-import pandas as pd
+",0.95,3.218749036048162
+57015170.0,"First of all, I assumed you've not repeated your strings correctly (like ""hi, this is an example line."" != ""hi, this is edited line."") by mistake, not on purpose (that I can't figure out).I named the accumulative file common.doc to distinct from the other .txt files in the target directory. Also, this example code implies all the files are in the same directory.And after common.doc editing:And a solution for multiline text (merging stays with .strip() removed on content writing), not suitable for hundreds of thousands of files tho...",,"common.doc
+.txt
+# merging.py
+import os
+import glob
 
-left = pd.DataFrame({'key': ['K0', 'K1', 'K2', 'K3'],
-                      'A': ['A0', 'A1', 'A2', 'A3'],
-                     'B': ['B0', 'B1', 'B2', 'B3']})
+with open(""common.doc"", ""w"") as common:
+    for txt in glob.glob(""./*.txt""):
+        with open(txt, ""r"") as f:
+            content = f.read()
+        common.write(""{} ({})\n"".format(os.path.basename(txt), content))
 
+common.doc
+# splitting.py
+with open(""common.doc"", ""r"") as common:
+    for line in common:
+        name = line[:line.find("" ("")]
+        text = line[line.find("" ("")+2:line.rfind("")"")]
+        with open(name, ""w"") as f:
+            f.write(text)
 
-right = pd.DataFrame({'key': ['K0', 'K1', 'K2', 'K3'],
-                      'C': ['C0', 'C1', 'C2', 'C3'],
-                      'D': ['D0', 'D1', 'D2', 'D3']})
-
-
-result = pd.merge(left, right, on='key')
-print result
-    A   B key   C   D
-0  A0  B0  K0  C0  D0
-1  A1  B1  K1  C1  D1
-2  A2  B2  K2  C2  D2
-3  A3  B3  K3  C3  D3
-
-import dask.dataframe as dd
-
-#Construct a dask objects from a pandas objects
-left1 = dd.from_pandas(left, npartitions=3)
-right1 = dd.from_pandas(right, npartitions=3)
-
-#merge on key
-print dd.merge(left1, right1, on='key').compute()
-    A   B key   C   D
-0  A3  B3  K3  C3  D3
-1  A1  B1  K1  C1  D1
-0  A2  B2  K2  C2  D2
-1  A0  B0  K0  C0  D0
-
-#first set indexes and then merge by them
-print dd.merge(left1.set_index('key').compute(), 
-               right1.set_index('key').compute(), 
-               left_index=True, 
-               right_index=True)
-      A   B   C   D
-key                
-K0   A0  B0  C0  D0
-K1   A1  B1  C1  D1
-K2   A2  B2  C2  D2
-K3   A3  B3  C3  D3
-",1.0,3.0799488507120376
-"Using pandas:To get rid of duplicate rows as well:This will not get rid of duplicates as the dataframe is created, but after. So a dataframe gets created by concatenating all of the files. Then it is de-duplicated. The final dataframe can then be saved to csv.",,"import pandas as pd
-
-interesting_files = glob.glob(""/home/tcs/PYTHONMAP/test1/*.csv"") 
-df = pd.concat((pd.read_csv(f, header = 0) for f in interesting_files))
-df.to_csv(""output.csv"")
-
-import pandas as pd
-
-interesting_files = glob.glob(""/home/tcs/PYTHONMAP/test1/*.csv"") 
-df = pd.concat((pd.read_csv(f, header = 0) for f in interesting_files))
-df_deduplicated = df.drop_duplicates()
-df_deduplicated.to_csv(""output.csv"")
-",1.0,3.022280831050231
-"pandas
+.strip()
+# splitting2.py
+with open(""common.doc"", ""r"") as common:
+    everything = common.read()
+elements = everything.split("")"")
+for elem in elements:
+    name = elem[:elem.find("" ("")].strip()
+    text = elem[elem.find("" ("")+2:]
+    if name:
+        with open(name, ""w"") as f:
+            f.write(text)
+",1.0,3.1988207325586675
+41865577.0,"pandas
 pd.merge_asof + querynumpy
 np.searchsorted ",,"pandas
 pd.merge_asof
@@ -441,38 +329,41 @@ ip = df.ip_address.values
 srch = b.searchsorted(ip) // 2
 mask = (ip >= b[0]) & (ip <= b[-1])
 df.loc[mask, 'country'] = c[srch[mask]]
-",1.0,2.964326437750974
-Consider a concatenation with merge which would translate your SQL query as OR is often analogous to a UNION:,,"OR
-UNION
-pd.concat([pd.merge(table_A, table_B, on='one'),
-           pd.merge(table_A, table_B, left_on='two', right_on='one')])
-",0.95,2.897168165195015
-"Create a conditional to find if there is an overlap between the two frames, create new columns based on the conditionals, and merge, using how='outer'What I observed from the data is that if the overlap (end-start) in df_1 is greater than or equal to the overlap in df_2, then add start_data_2, otherwise, leave as is. The calculation hinges on that; if it is a false premise OP, do let me know.",,"#create overlap columns
+",1.0,3.171004707931771
+47667379.0,"You'll have to learn how templating works. Read this page on the docs to learn more: http://www.tornadoweb.org/en/stable/guide/templates.html#template-syntax After that, you can find the complete template syntax reference on this page: http://www.tornadoweb.org/en/stable/template.html#syntax-referenceAnyway, you can ""merge"" two templates and render them as one by using the {% include %} template tag. Example:Your Home1.html template should look roughly like this:Then render only the Home1.html from your request handler.This answer is far from perfect. You'll have to invest some time to actually learn about templates.",http://www.tornadoweb.org/en/stable/guide/templates.html#template-syntax http://www.tornadoweb.org/en/stable/template.html#syntax-reference,"{% include %}
+Home1.html
+<html>
+    <!-- do something -->
+    {% include 'Home2.html' %}
+    <!-- do something else -->
+</html>
 
-df_1['overlap']= df_1.end - df_1.start
-df_2['overlap']= df_2.end - df_2.start
+Home1.html",1.0,3.0211817572297783
+29370770.0,"With python's csv reader and writer,
+reading from the files a.csv and b.csv, writing to c.csv:Creates file c.csv:(I assume that those braces and extra linebreaks in your csv code are just here on stackoverflow and not really part of your csv files? I also assume that a.csv and b.csv have the same length in lines.)",,"a.csv
+b.csv
+c.csv
+# -*- coding: utf-8 -*-
 
-cond1 = df_1.overlap.ge(df_2.overlap)
-df_1['key'] = np.where(cond1, df_2.some_data_2,'n1')
-df_2['key'] = np.where(cond1, df_2.some_data_2,'n')
+import csv
 
-(pd
- .merge(df_1,df_2,
-        how='outer',
-        on='key',
-        suffixes = ('_1','_2'))
- .drop(['key','overlap_1','overlap_2'],
-       axis=1)
-  )
+with open('a.csv', 'r') as file_a:
+    with open('b.csv', 'r') as file_b:
+        with open('c.csv', 'w') as file_c:
+            reader_a = csv.reader(file_a, delimiter=',')
+            reader_b = csv.reader(file_b, delimiter=',')
+            writer_c = csv.writer(file_c)
 
-   start_1  end_1   some_data_1 start_2 end_2   some_data_2
-0   0.0     5.0        AA        0.0    5.0      AA_AA
-1   10.0    17.0       BB       12.0    17.0     BB_BB
-2   23.0    28.0       CC       23.0    25.0     CC_CC
-3   35.0    41.0       DD       NaN     NaN      NaN
-4   NaN     NaN        NaN      55.0    62.0     DD_DD
-",1.0,2.891561558550662
-"Is there a reason you're avoiding creating some objects to manage this? If it were me, I'd go objects and do something like the following (this is completely untested, there may be typos):Now I can right code that looks like:This is just a starting point. Now you can you add methods that group (and sum) the expenditures list by decoration (e.g. ""I spent HOW MUCH on Twinkies last month???""). You can add a method that parses entries from a file, or emits them to a csv list. You can do some charting based on time.",,"#!/usr/bin/env python3
+            for cols_a in reader_a:
+                cols_b = reader_b.next()
+                writer_c.writerow(cols_a + cols_b)
+
+c.csv
+a, b, c, d,o, p, q, r
+e, f, g, h,s, t, u, v
+i, j, k, l,w, x, y, z
+",1.0,2.974098967293303
+22306340.0,"Is there a reason you're avoiding creating some objects to manage this? If it were me, I'd go objects and do something like the following (this is completely untested, there may be typos):Now I can right code that looks like:This is just a starting point. Now you can you add methods that group (and sum) the expenditures list by decoration (e.g. ""I spent HOW MUCH on Twinkies last month???""). You can add a method that parses entries from a file, or emits them to a csv list. You can do some charting based on time.",,"#!/usr/bin/env python3
 
 from datetime import datetime # why python guys, do you make me write code like this??
 from operator import itemgetter
@@ -504,31 +395,39 @@ budget.spend(8)
 
 print('total spent:', budget.totalSpent())
 print('left to go:', budget.balance())
-",1.0,2.8862988556994216
-As you identified the problem is that merge_sort has no way of knowing the basis of sorting. You could change merge_sort to take in an additional parameter that returns the key for each element in the sequence just like sorted does:Then change the comparison to call passed function instead of comparing elements directly:And finally pass key to recursive calls:With these changes it will work as you expect:One thing to note though is that results are not identical with sorted since merge_sort is not stable:,https://docs.python.org/3/library/functions.html#sorted https://en.wikipedia.org/wiki/Sorting_algorithm#Stability,"merge_sort
-merge_sort
-sorted
-def merge_sort(seq, key=lambda x: x):
+",1.0,2.9460564551071036
+52879192.0,"I suggest you to use json, which is specific for JSON object manipulation. You can do something like this:where json.load() convert a string to a json object, while json.dumps() convert a json to a string. The parameter indent let you print the object in the expanded way.",,"json
+    import json
 
-if key(left[left_counter]) < key(right[right_counter]):
-    seq[master_counter] = left[left_counter]
-    left_counter += 1
-else:
-    seq[master_counter] = right[right_counter]
-    right_counter += 1
+with open('example1.json') as f:
+    data1 = json.load(f)
 
-left  = merge_sort( seq[:mid_index], key )
-right = merge_sort( seq[mid_index:], key )
+with open('example2.json') as f:
+    data2 = json.load(f)
 
-merge_sort([4, 6, 2, 1]) # [1, 2, 4, 6]
-merge_sort(['foo', 'a', 'bar', 'foobar'], key=len) # ['a', 'bar', 'foo', 'foobar']
+with open('example3.json') as f:
+    data3 = json.load(f)
 
-sorted
-merge_sort
-merge_sort(['foo', 'a', 'bar', 'foobar'], key=len) # ['a', 'bar', 'foo', 'foobar']
-sorted(['foo', 'a', 'bar', 'foobar'], key=len) # ['a', 'foo', 'bar', 'foobar']
-",1.0,2.8844279254346916
-"Your doing a ton of work to put a <table> tag into a table. Let pandas do that for you (it uses BeautifulSoup under the hood). Then to merge, there's 2 ways you can do it:1) Make one of the dataframes only have what is not contained in the other (However, keep columns that you will do the merge on).2) Drop columns from the second dataframe that are in the dataframe (again, make sure to not drop the columns you will do the merge on.OR",,"<table>
+items1 = data1[""items""]
+#print(json.dumps(items1, indent=2))
+items2 = data2[""items""]
+items3 = data3[""items""]
+
+listitem = [items1, items2, items3]
+finaljson = {""items"" : []}
+
+finaljson[""items""].append(items1)
+finaljson[""items""].append(items2)
+finaljson[""items""].append(items3)
+print(json.dumps(finaljson, indent=2))
+
+with open('merged_json.json', ""w"") as f:
+    f.write(json.dumps(finaljson, indent=2))
+
+json.load()
+json.dumps()
+indent",1.0,2.927135841895867
+60013509.0,"Your doing a ton of work to put a <table> tag into a table. Let pandas do that for you (it uses BeautifulSoup under the hood). Then to merge, there's 2 ways you can do it:1) Make one of the dataframes only have what is not contained in the other (However, keep columns that you will do the merge on).2) Drop columns from the second dataframe that are in the dataframe (again, make sure to not drop the columns you will do the merge on.OR",,"<table>
 import pandas as pd
 
 def scrape_data(url):
@@ -568,37 +467,26 @@ dropCols = [ col for col in df1.columns if col in df2.columns and col not in ['P
 df2 = df2.drop(dropCols, axis=1)
 
 df = df1.merge(df2, how='left', on=['Player', 'Tm'])
-",1.0,2.8490270006245755
-"You can use DataFrame.join with rename and parameter on, then DataFrame.set_index with DataFrame.reorder_levels:Or use Index.map:",http://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.join.html http://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.set_index.html http://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.reorder_levels.html http://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Index.map.html,"DataFrame.join
-rename
-on
-DataFrame.set_index
-DataFrame.reorder_levels
-result = (df.join(s1.rename('cnts'), on='Pet')
-           .set_index('cnts', append=True)
-           .reorder_levels([0,2,1]))
-print (result)
-                      Favloc
-Pet     cnts Name           
-Cat     3    Kitty     couch
-             Harry   windows
-             Bear        bed
-             Sam      basket
-Dog     3    Max       floor
-             Hunter   carper
-Hamster 1    Fluffy  Haybale
+",1.0,2.9132718848303862
+41865577.0,I think what you are looking for is going to be more like this...This is assuming df is a list of dictionaries. This will append the country to each dictionary if the number falls into the correct range.,,"for x in df['ip_address']:
+    for y in df1:
+        if x<=y['upper_bound_ip_address'] and x>=y['lower_bound_ip_address']:
+            x['country']=y['country']
+",0.95,2.9099149781742275
+54591008.0,sql equivalent with where:that would translate to python as:,,"SELECT t1.company,
+        t1.resource,
+        t2.company,
+        t2.resource,
+        t1.ClockInDate,
+        t2.EffectiveFrom,
+        t2.EffectiveTo
+FROM table1 t1
+LEFT JOIN table2 t2 ON t1.resource = t2.resource
+                    AND t1.company = t2.company
+WHERE t1.ClockInDate IS NULL --no ClockInDate to check
+    OR t2.company IS NULL AND t2.resource IS NULL --not rows in t2 for t1
+    OR t1.ClockInDate BETWEEN t2.EffectiveFrom AND t2.EffectiveTo --ClockInDate exists, rows in t2 exist, we can now check ClockInDate to be between t2.EffectiveFrom AND t2.EffectiveTo
 
-Index.map
-idx = df.index.get_level_values('Pet').map(s1.rename('cnts').get)
-result = df.set_index(idx, append=True).reorder_levels([0,2,1])
-print (result)
-                      Favloc
-Pet     cnts Name           
-Cat     3    Kitty     couch
-             Harry   windows
-             Bear        bed
-             Sam      basket
-Dog     3    Max       floor
-             Hunter   carper
-Hamster 1    Fluffy  Haybale
-",1.0,2.8267853672662877
+df_merge = pd.merge(df1, df2, on=['Company', 'Resource'], how='left')
+df_final = df_merge[df_merge.ClockInDate.isnull() | df_merge.ClockInDate.between(df_merge.EffectiveFrom, df_merge.EffectiveTo) | df_merge.EffectiveFrom.isnull()]
+",1.0,2.884825687817824

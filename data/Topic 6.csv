@@ -1,5 +1,131 @@
-answer,link,code,sim score,sc
-"You cannot have multiple colors in a label. If you want multiple colors, use a one-line Text widget, or use a canvas with a text item. Here's a quick and dirty example using a text widget. It doesn't do smooth scrolling, doesn't use any real data, and leaks memory since I never trim the text in the input widget, but it gives the general idea:",,"import Tkinter as tk
+id,answer,link,code,sim score,sc
+50297176.0,"pyvips can do exactly what you want very quickly and efficiently. For example:The access=""sequential"" option tells pyvips that you want to stream the image. It will only load pixels on demand as it generates output, so you can merge enormous images using only a little memory. The arrayjoin operator joins an array of images into a grid across tiles across. It has quite a few layout options: you can specify borders, overlaps, background, centring behaviour and so on.I can run it like this:So it joined 100 JPG images to make a 14,000 x 20,000 pixel mosaic in about 2.5s on this laptop, and from watching top, needed about 300mb of memory. I've used it to join over 30,000 images into a single file, and it would go higher. I've made images of over 300,000 by 300,000 pixels.The pyvips equivalent of PIL's paste is insert. You could use that too, though it won't work so well for very large numbers of images. There's also a command-line interface, so you could just enter:To join up a large set of JPG images.",https://pypi.org/project/pyvips/ https://libvips.github.io/libvips/API/current/libvips-conversion.html#vips-arrayjoin https://libvips.github.io/libvips/API/current/libvips-conversion.html#vips-insert,"import sys
+import pyvips
+
+images = [pyvips.Image.new_from_file(filename, access=""sequential"")
+          for filename in sys.argv[2:]]
+final = pyvips.Image.arrayjoin(images, across=10)
+final.write_to_file(sys.argv[1])
+
+access=""sequential""
+arrayjoin
+across
+$ for i in {1..100}; do cp ~/pics/k2.jpg $i.jpg; done
+$ time ../arrayjoin.py x.tif *.jpg 
+
+real    0m2.498s
+user    0m3.579s
+sys 0m1.054s
+$ vipsheader x.tif
+x.tif: 14500x20480 uchar, 3 bands, srgb, tiffload
+
+top
+paste
+insert
+vips arrayjoin ""${echo *.jpg}"" x.tif --across 10
+",1.0,4.058713017170735
+44155727.0,"Your naive method sounds very reasonable; I think the time complexity of it is O(NM), where N is the number of intervals you're trying to resolve, and M is the the range over which you're trying to resolve them.  The difficulty you might have is that you also have space complexity of O(M), which might use up a fair bit of memory.Here's a method for merging without building a ""master list"", which may be faster; because it treats intervals as objects, complexity is no longer tied to M.I'll represent an interval (or list of intervals) as a set of tuples (a,b,p), each of which indicates the time points from a to b, inclusively, with the integer priority p (W can be 1, and S can be 2).  In each interval, it must be the case that a < b.  Higher priorities are preferred.We need a predicate to define the overlap between two intervals:When we find overlaps, we need to resolve them.  This method takes care of that, respecting priority:Finally, merge_intervals takes an iterable of intervals and joins them together until there are no more overlaps:I think this has worst-case time complexity of O(N^4), although the average case should be fast.  In any case, you may want to time this solution against your simpler method, to see what works better for your problem.As far as I can see, my merge_intervals works for your examples:To cover the case with blank (B) intervals, simply add another interval tuple which covers the whole range with priority 0: (1, M, 0):",,"(a,b,p)
+a
+b
+p
+W
+1
+S
+2
+a
+b
+def has_overlap(i1, i2):
+    '''Returns True if the intervals overlap each other.'''
+    (a1, b1, p1) = i1
+    (a2, b2, p2) = i2
+    A = (a1 - a2)
+    B = (b2 - a1)
+    C = (b2 - b1)
+    D = (b1 - a2)
+    return max(A * B, D * C, -A * D, B * -C) >= 0
+
+def join_intervals(i1, i2):
+    '''
+    Joins two intervals, fusing them if they are of the same priority,
+    and trimming the lower priority one if not.
+
+    Invariant: the interval(s) returned by this function will not
+    overlap each other.
+
+    >>> join_intervals((1,5,2), (4,8,2))
+    {(1, 8, 2)}
+    >>> join_intervals((1,5,2), (4,8,1))
+    {(1, 5, 2), (6, 8, 1)}
+    >>> join_intervals((1,3,2), (4,8,2))
+    {(1, 3, 2), (4, 8, 2)}
+    '''
+    if has_overlap(i1, i2):
+        (a1, b1, p1) = i1
+        (a2, b2, p2) = i2
+        if p1 == p2:
+            # UNION
+            return set([(min(a1, a2), max(b1, b2), p1)])
+        # DIFFERENCE
+        if p2 < p1:
+            (a1, b1, p1) = i2
+            (a2, b2, p2) = i1
+        retval = set([(a2, b2, p2)])
+        if a1 < a2 - 1:
+            retval.add((a1, a2 - 1, p1))
+        if b1 > b2 + 1:
+            retval.add((b2 + 1, b1, p1))
+        return retval
+    else:
+        return set([i1, i2])
+
+merge_intervals
+import itertools
+
+def merge_intervals(intervals):
+    '''Resolve overlaps in an iterable of interval tuples.'''
+    # invariant: retval contains no mutually overlapping intervals
+    retval = set()
+    for i in intervals:
+        # filter out the set of intervals in retval that overlap the
+        # new interval to add O(N)
+        overlaps = set([i2 for i2 in retval if has_overlap(i, i2)])
+        retval -= overlaps
+        overlaps.add(i)
+        # members of overlaps can potentially all overlap each other;
+        # loop until all overlaps are resolved O(N^3)
+        while True:
+            # find elements of overlaps which overlap each other O(N^2)
+            found = False
+            for i1, i2 in itertools.combinations(overlaps, 2):
+                if has_overlap(i1, i2):
+                    found = True
+                    break
+            if not found:
+                break
+            overlaps.remove(i1)
+            overlaps.remove(i2)
+            overlaps.update(join_intervals(i1, i2))
+        retval.update(overlaps)
+    return retval
+
+merge_intervals
+# example 1
+assert (merge_intervals({(5, 8, 2), (1, 5, 1), (7, 10, 1)}) ==
+        {(1, 4, 1), (5, 8, 2), (9, 10, 1)})
+
+# example 2
+assert (merge_intervals({(5, 8, 2), (2, 10, 1)}) ==
+        {(2, 4, 1), (5, 8, 2), (9, 10, 1)})
+
+0
+(1, M, 0)
+# example 3 (with B)
+assert (merge_intervals([(1, 2, 1), (5, 8, 2), (9, 10, 1),
+                         (16, 20, 2), (1, 20, 0)]) ==
+        {(1, 2, 1), (3, 4, 0), (5, 8, 2),
+         (9, 10, 1), (11, 15, 0), (16, 20, 2)})
+",1.0,3.8015660807758125
+24760910.0,"You cannot have multiple colors in a label. If you want multiple colors, use a one-line Text widget, or use a canvas with a text item. Here's a quick and dirty example using a text widget. It doesn't do smooth scrolling, doesn't use any real data, and leaks memory since I never trim the text in the input widget, but it gives the general idea:",,"import Tkinter as tk
 import random
 
 class Example(tk.Frame):
@@ -32,67 +158,226 @@ if __name__ == ""__main__"":
     root = tk.Tk()
     Example(root).pack(fill=""both"", expand=True)
     root.mainloop()
-",1.0,4.155025024091593
-"The answer to all 3 of your questions is yes, you can use stderr=subprocess.STDOUT as an argument to Popen to redirect output from stderr to stdout:",,"stderr=subprocess.STDOUT
-Popen
-stderr
-stdout
-self.process = Popen(command, stdout=PIPE, stderr=subprocess.STDOUT)
-",0.95,3.4441978269278613
-try pandas.DataFrame.updateModify DataFrame in place using non-NA values from passed DataFrame. Aligns on indices,http://pandas.pydata.org/pandas-docs/stable/generated/pandas.DataFrame.update.html,"DataFrame.update(other, join='left', overwrite=True,
-                 filter_func=None, raise_conflict=False)
-",0.9,3.385710211373289
-Use this code :Ouptut:,,"list1= [['user1', 186, 'Feb 2017, Apr 2017', 550, 555], ['user2', 282, 'Mai 2017', 0, 3579], ['user3', 281, 'Mai 2017', 10, 60]]
+",1.0,3.6522207094913988
+39250242.0,"If I understand correctly, you want to recursively merge the nodes until there is no overlap between the edges. My idea was to start with a fully connected graph and ""recursively"" merge the nodes. Here is a 'fake' recursive implementation. EDIT: I'm not too sure why networkx is necessary here, it could be done with just dicts (maybe more clear). ",https://i.stack.imgur.com/7rS6L.png,"import networkx as nx
 
-list2= [['user1', 186, 'Feb 2017, Mar 2017, Mai 2017', 0, 740],['user2', 282, 'Feb 2017', 0, 1000], ['user4', 288, 'Feb 2017', 60, 10]]
+# file you provided
+with open('temp.txt', 'r') as f:
+    lines = f.readlines()
 
-final_list = []
-for l1_data, l2_data in zip(list1, list2):
-    if l1_data[0] == l2_data[0]:
-        for index, elem in enumerate(l2_data):
-            if index+1 <= len(l1_data):
-                if not elem and l1_data[index]:
-                    l2_data[index] = l1_data[index]                    
-    else: final_list.append(l1_data)
-    final_list.append(l2_data)
-print final_list
 
-[['user1', 186, 'Feb 2017, Mar 2017, Mai 2017', 550, 740], ['user2', 282, 'Feb 2017', 0, 1000], ['user3', 281, 'Mai 2017', 10, 60], ['user4', 288, 'Feb 2017', 60, 10]]
-",0.8,3.0352542238165845
-"Just use a defaultdict.items is a list of your initial lists.
-grouped_list will be a list of the grouped lists by uid.",,"defaultdict
-import collections
 
-def group_items(items):
-    grouped_dict = collections.defaultdict(list)
-    for item in items:
-        uid = item[0]
-        t = item[1]
-        grouped_dict[uid].append(t)
+nodes = {}
+for idx, line in enumerate(lines):
+    authors, title, venue = line.split('<>')[1:4]
+    authors = set(authors.split(','))
+    nodes[idx] = dict(authors = authors, title = (title, ))
 
-    grouped_list = []
-    for uid, tuples in grouped_dict.iteritems():
-        grouped_list.append([uid] + tuples)
+G = nx.complete_graph(len(nodes))
+nx.set_node_attributes(G, nodes)
 
-    return grouped_list
 
-items
-grouped_list",0.85,2.907018436891244
-I would try to create a temporary key to join on:Output:,,"#unzip list_of_couples into index for table_a and table_b
-a, b  = zip(*list_of_couples)
+def merge_recursive(G, target = 'authors'):
+    """"""
+    Keeps merging if there is overlap between nodes
+    """"""
+    # check edges
+    while G.edges():
+        for (i, j) in G.edges():
+            overlap = G.nodes()[i][target].intersection(G.nodes()[j][target])
+            # copy values
+            if overlap:
+                tmp = {}
+                for k, v in G.nodes()[i].items():
+                    if isinstance(v, set):
+                        tmp[k] = v.union(G.nodes()[j][k])
+                    else:
+                        tmp[k] = v + G.nodes()[j][k]
 
-#Loop on length of index to assign same value of key to each table for the appropriate index
-for i in range(len(a)):
-    df_a.loc[a[i], 'key'] = i
-    df_b.loc[b[i], 'key'] = i
+                nx.set_node_attributes(G, {i: tmp})
+                G.remove_node(j)
+            # no overlap remove edge
+            else:
+                G.remove_edge(i, j)
+            break
+    return G
 
-#merge dataframes on 'key', remove NaN records and drop temporary 'key' column
-df_a.merge(df_b, on='key').dropna(subset=['key']).drop('key', axis=1)
+merged = merge_recursive(G.copy())
 
-   col_a  col_b  col_c  col_d
-0      1      2      9      8
-5      1      1      3      3
-",1.0,2.857514656297229
-"This can be achieved in much simple way in shell as:(Note: Don't use .csv in extension as it will cause inconsistency with find. After this command is finished, file can be renamed as .csv",,"find . -name ""*.csv"" | xargs cat > mergedCSV
-",1.0,2.7531382473691717
-"That's the editor that is opened so that you can write the commit message. That means the merge went well, no conflicts. Just set the comment, save the file and quit and the merge revision should be done.",,,0.0,0.0
+from matplotlib.pyplot import subplots
+
+fig, (left, right) = subplots(1, 2, figsize = (10,  5))
+nx.draw(G, ax = left, with_labels = 1)
+nx.draw(merged, ax = right, with_labels = 1)
+
+left.set_title('Before merging')
+right.set_title('After merging')
+fig.show()
+",1.0,3.602337989813374
+41865577.0,"pandas
+pd.merge_asof + querynumpy
+np.searchsorted ",,"pandas
+pd.merge_asof
+query
+pd.merge_asof(
+    df.sort_values('ip_address'), df1,
+    left_on='ip_address', right_on='lower_bound_ip_address'
+).query('ip_address <= upper_bound_ip_address')[['ip_address', 'country']]
+
+numpy
+np.searchsorted
+b = df1.values[:, :2].ravel()
+c = df1.country.values
+ip = df.ip_address.values
+srch = b.searchsorted(ip) // 2
+mask = (ip >= b[0]) & (ip <= b[-1])
+df.loc[mask, 'country'] = c[srch[mask]]
+",1.0,3.4571040124151313
+22662996.0,"You should know the shape of returned array. Suppose, myArray.shape = (2, 4)
+Then",,"allArrays = np.empty((0, 4))
+for x in range(0, 1000):
+    myArray = myFunction(x)
+    allArrays = np.append(allArrays, myArray, axis = 0)
+",1.0,3.4296997775186977
+60330020.0,"Create a conditional to find if there is an overlap between the two frames, create new columns based on the conditionals, and merge, using how='outer'What I observed from the data is that if the overlap (end-start) in df_1 is greater than or equal to the overlap in df_2, then add start_data_2, otherwise, leave as is. The calculation hinges on that; if it is a false premise OP, do let me know.",,"#create overlap columns
+
+df_1['overlap']= df_1.end - df_1.start
+df_2['overlap']= df_2.end - df_2.start
+
+cond1 = df_1.overlap.ge(df_2.overlap)
+df_1['key'] = np.where(cond1, df_2.some_data_2,'n1')
+df_2['key'] = np.where(cond1, df_2.some_data_2,'n')
+
+(pd
+ .merge(df_1,df_2,
+        how='outer',
+        on='key',
+        suffixes = ('_1','_2'))
+ .drop(['key','overlap_1','overlap_2'],
+       axis=1)
+  )
+
+   start_1  end_1   some_data_1 start_2 end_2   some_data_2
+0   0.0     5.0        AA        0.0    5.0      AA_AA
+1   10.0    17.0       BB       12.0    17.0     BB_BB
+2   23.0    28.0       CC       23.0    25.0     CC_CC
+3   35.0    41.0       DD       NaN     NaN      NaN
+4   NaN     NaN        NaN      55.0    62.0     DD_DD
+",1.0,3.3576136491540893
+24760910.0,If you're looking to get two colours on the same line you can use several labels and use .grid() to get them on the same line.If you know you wanted two words and two colours for example you can use something like this:Or if you wanted to have a different colours for each word in a string for example:,,".grid()
+root = Tk()
+Label(root,text=""red text"",fg=""red"").grid(column=0,row=0)
+Label(root,text=""green text"",fg=""green"").grid(column=0,row=1)
+mainloop()
+
+words = [""word1"",""word2"",""word3"",""word4""]
+colours = [""blue"",""green"",""red"",""yellow""]
+
+for index,word in enumerate(words):
+    Label(window,text = word,fg=colours[index]).grid(column=index,row=0)
+",1.0,3.1062943546969772
+54049458.0,"Updated answer courtesy @OP:(Old Answer - don't use)You don’t have to create a variation each circle. Chain them:Update: Reduce is awesome in simplicity and speed, but for readability, it is less readable compared to mergers: We could DRY the code:",,"dfs = [df1, df2, df3, df4, df5] 
+from functools import partial 
+outer_merge = partial(pd.merge, how='outer') 
+reduce(outer_merge, dfs)
+
+ df= df5.merge(df4[['code', 'name']],
+            left_on='provinceCode', 
+            right_on='code', 
+            how='left'
+            ).merge(df3[['code', 'name']], 
+            left_on='areaCode', 
+            right_on='code', 
+            how = 'left'
+            ).merge(df2[['code', 'name']], 
+            left_on='areaCode',
+            right_on='code',
+            how ='left'
+            ).merge(df1[['provinceCode', 'provinceName']],
+            left_on='provinceCode',
+            right_on='code',
+            how='left')
+
+common_joins = dict(right_on='code', how='left')
+common_columns = ['code', 'name']
+
+df= df5.merge(df4[common_columns],
+            left_on='provinceCode', 
+            **common_joins
+            ).merge(df3[common_columns], 
+            left_on='areaCode', 
+            **common_joins
+            ).merge(df2[common_columns], 
+            left_on='areaCode',
+            **common_joins
+            ).merge(df1[['provinceCode', 'provinceName']],
+            left_on='provinceCode',
+            **common_joins)
+",0.95,3.0693434716850025
+1158128.0,"Here you go: a fully functioning merge sort for lists (adapted from my sort here):Call it like this:For good measure, I'll throw in a couple of changes to your Obj class:",http://github.com/hughdbrown/algorithm/blob/05307be15669de0541cd4e91c03b610d440b4290/mergesort.py,"def merge(*args):
+    import copy
+    def merge_lists(left, right):
+        result = []
+        while left and right:
+            which_list = (left if left[0] <= right[0] else right)
+            result.append(which_list.pop(0))
+        return result + left + right
+    lists = list(args)
+    while len(lists) > 1:
+        left, right = copy.copy(lists.pop(0)), copy.copy(lists.pop(0))
+        result = merge_lists(left, right)
+        lists.append(result)
+    return lists.pop(0)
+
+merged_list = merge(a, b, c)
+for item in merged_list:
+    print item
+
+class Obj(object):
+    def __init__(self, p) :
+        self.points = p
+    def __cmp__(self, b) :
+        return cmp(self.points, b.points)
+    def __str__(self):
+        return ""%d"" % self.points
+
+self
+__init__()
+__cmp__
+str()
+Obj",0.95,2.844377433982091
+52502495.0,I don't know why most of the answers have list1+list2 as it will just append the list(s) which is not the expected output. You can try something as below. Taking order from your example provided where one element is from smaller list and other from the bigger list.,,"list1+list2
+input1='John Becky William Isaac'
+input2='James Ryan'
+input1=input1.split(' ')
+input2=input2.split(' ')
+new=[]
+
+max_list,min_list=(input1,input2) if len(input1)>len(input2) else (input2,input1)
+
+for i in range(len(min_list)):
+    new.append(min_list[i]+' '+max_list[i])
+new += max_list[len(min_list):]
+print(' '.join(new)) # James John Ryan Becky William Isaac
+",1.0,2.8186076080471305
+52855568.0,"Your csv file apparently has 5 columns, but your data is a single list of values. That means that you also only need 1 column header. Pandas complains right now because the dimension of the column list (5) does not match the number of columns in your data (1). You could fix this for example by saying:That is assuming that you want to use the first column name.",,"df = pd.DataFrame(data=data, index=None, columns=[columns[0]])
+",1.0,2.7897084642933567
+20278996.0,"this assumes dict1 and dict2 has the same keyssomething like that should work, i didn't run the code so it might be wrong but the idea should be correct.",,"res = {}
+for i in dict1.keys()
+    res[i] = dict1[i] + dict2[i]
+",0.95,2.7181825131154604
+54873983.0,"A little bit tricky , using shift create the groupkey , then agg ",,"shift
+agg
+df.fillna('NaN',inplace=True) # notice here NaN always no equal to NaN, so I replace it with string 'NaN'
+df.groupby((df.drop('Y',1)!=df.drop('Y',1).shift()).any(1).cumsum()).\
+     agg(lambda x : ','.join(x) if x.name=='Y' else x.iloc[0])
+Out[19]: 
+         Y   X1    X2    X3    X4    X5
+1    A,B,C  NaN -3810  TRUE  None  None
+2  D,E,F,G  NaN -3810  None  None  None
+3        H  NaN -3810  TRUE  None  None
+",1.0,2.673096140022031
+44484520.0,"I do not see repeats as a whole row but there are repetetions in customerId. You could remove them using:where df could be the dataframe corresponding to amount or one obtained post merge. In case you want fewer rows (say n), you could use:",,"    df.drop_duplicates('customerId', inplace = 1) 
+
+    df.groupby('customerId).head(n)
+",1.0,2.6541780373396353
