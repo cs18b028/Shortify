@@ -2,7 +2,10 @@
 Keywords-based Summarizer
 <br>
 <br>
-Given a query, this tool gets relevant questions from stack overflow and generates summaries from a ranked list of answers for the retrieved questions, based on keywords along with one full crisp and informative summarized answer. For simplicity, we are restricting to queries in the python domain.
+Given a query, this tool gets relevant questions and thier answers from stack overflow, categorizes them into different topics and generates summaries from the answers under each topic. Topics are characterized by the keywords in a set of answers. For simplicity, we are restricting to queries in the python domain.
+<br>
+<br>
+This tool is inspired from <a href="http://www.mysmu.edu/faculty/davidlo/papers/ase17-answerbot.pdf" target="_blank">AnswerBot</a>
 
 ## System/Software requirements
 The entire tool has been developed on windows 10 and has been implemented as a webapp (react+flask framework). Following are the important packages used in the webapp.
