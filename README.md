@@ -37,4 +37,6 @@ npm start
 
 ## Implemenataion details
 
+<div style="width: 640px; height: 480px; margin: 10px; position: relative;"><iframe allowfullscreen frameborder="0" style="width:640px; height:480px" src="https://lucid.app/documents/embeddedchart/15269185-f68a-4577-bc17-739d96e5dee3" id="7NWx95r3G57B"></iframe></div>
+
 ## File guide
