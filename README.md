@@ -50,7 +50,7 @@ The four main modules are:
 2. 'keyword generator': LDA model is implemented for this. The evaluation is done using another model called a CoherenceModel using which the optimal number of topics for our dataset is chosen. This model clusters the data into 8 topics. Each topic is represented with a set of keywords that represent the semantic structure of that topic.
 3. 'ranking': Ranks the answers in their respective topic categories and gives the top 15 answers for each topic. Uses similarity score, entropy score, user score, basing on which ranking is done.
 4. 'summarizer': MMR model is implemented for this which produces summaries of the answers produced by the 'ranking' model in their respective categories.
-<br>
+
 All the above modules are implemented in Jupyter Notebook. But for the website, all these relevant files (.ipynb files) are converted to .py files and are integrated into the backend.
 
 ## Folder guide
