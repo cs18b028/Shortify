@@ -66,7 +66,7 @@ All the above modules are initially implemented in Jupyter Notebook module-wise.
 ## File guide
 | File                                 | Description                                                            |
 | --- | --- |
-| get_data.ipynb                       | downloads the stackoverflow public dataset fron Google BigQuery results are stored in data folder (original data)      |
+| get_data.ipynb                       | downloads the stackoverflow public dataset from Google BigQuery        |
 | preprocessing.ipynb                  | holds the statistics of this dataset                                   |
 | process_data.ipynb                   | preprocesses the data required by the 'relevant questions' module      |
 | related_questions_model.ipynb        | gives the most relevant questions for a given query                    |
@@ -74,6 +74,8 @@ All the above modules are initially implemented in Jupyter Notebook module-wise.
 | ranking.ipynb                        | ranks the answers corresponding to the questions relevant to the query |
 | summarizer.ipynb                     | summarizes the ranked answers                                          |
 | WebApp/backend/process_data.py       | .py file corresponding to the process_data.ipynb file                  |   
-| WebApp/backend/relevant_questions.py | .py file corresponding to the relevant_questions.ipynb file            |
+| WebApp/backend/relevant_questions.py | .py file corresponding to the relevant_questions_model.ipynb file      |
 | WebApp/backend/ranking.py            | .py file corresponding to the ranking.ipynb file                       |
 | WebApp/backend/summarizer.py         | .py file corresponding to the summarizer.ipynb file                    |
+
+**NOTE** Functions in get_data, preprocessing, process_data, keywords_generator, relevant_answer_categories (.ipynb) files are simply used to get data and process and generate modified datasets. Few functions in relevant_questions_model.ipynb train and save word2vec model and embeddings in models folder. Thus all these functions are not included in WebApp but their results that are stored in data, models folders are used in the WebApp.
