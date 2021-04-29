@@ -49,34 +49,36 @@ npm start
 <br>
 <br>
 The four main modules are:
-- 'relevance question': Gives the top 100 questions which are relevant to the query. Uses similarity metrics like cosine similarity score, word frequency score, normalized answer score, polarity and subjectivity for calculating the relevance score.
-- 'keyword generator': LDA model is implemented for this. The evaluation is done using another model called a CoherenceModel using which the optimal number of topics for our dataset is chosen. This model clusters the data into 8 topics. Each topic is represented with a set of keywords that represent the semantic structure of that topic.
-- 'ranking': Ranks the answers in their respective topic categories and gives the top 15 answers for each topic. Uses similarity score, entropy score, user score, basing on which ranking is done.
-- 'summarizer': MMR model is implemented for this which produces summaries of the answers produced by the 'ranking' model in their respective categories.
+1. 'relevance question': Gives the top 100 questions which are relevant to the query. Uses similarity metrics like cosine similarity score, word frequency score, normalized answer score, polarity and subjectivity for calculating the relevance score.
+2. 'keyword generator': LDA model is implemented for this. The evaluation is done using another model called a CoherenceModel using which the optimal number of topics for our dataset is chosen. This model clusters the data into 8 topics. Each topic is represented with a set of keywords that represent the semantic structure of that topic.
+3. 'ranking': Ranks the answers in their respective topic categories and gives the top 15 answers for each topic. Uses similarity score, entropy score, user score, basing on which ranking is done.
+4. 'summarizer': MMR model is implemented for this which produces summaries of the answers produced by the 'ranking' model in their respective categories.
 <br>
 All the above modules are implemented in Jupyter Notebook. But for the website, all these relevant files (.ipynb files) are converted to .py files and are integrated into the backend.
 <br>
 <br>
 
 ## Folder guide
-| Folder       | Description         |
-| WebApp     | Contains all the files and folders corresponding to the website |
-| data       | Contains the relevant datasets used |
-| WebApp/backend       | Contains the .py files that perform the this tool tasks |
-| WebApp/frontend    | Contains the files related to the user interface of the website |
+| Folder          | Description                                                     |
+| --- | --- |
+| WebApp          | Contains all the files and folders corresponding to the website |
+| data            | Contains the relevant datasets used                             |
+| WebApp/backend  | Contains the .py files that perform the this tool tasks         |
+| WebApp/frontend | Contains the files related to the user interface of the website |
 
 ## File guide
-| File       | Description         |
-| get_data.ipynb | downloads the datasets used from the stack overflow corpus |
-| preprocessing.ipynb | holds the statistics of this dataset |
-| process_data.ipynb | preprocesses the data required by the 'relevance question' module |
-| related_questions_model.ipynb  | gives the most relevant questions for a given query |
-| keywords_generator.ipynb     | generates topic categories for each answer |
-| ranking.ipynb | ranks the answers corresponding to the questions relevant to the query  |
-| summarizer.ipynb | summarizes the ranked answers |
-| WebApp/backend/process_data.py | .py file corresponding to the process_data.ipynb file |
-| WebApp/backend/relevant_questions.py | .py file corresponding to the relevant_questions.ipynb file |
-| WebApp/backend/ranking.py | .py file corresponding to the ranking.ipynb file |
-| WebApp/backend/summarizer.py | .py file corresponding to the summarizer.ipynb file |
+| File                                 | Description                                                            |
+| --- | --- |
+| get_data.ipynb                       | downloads the datasets used from the stack overflow corpus             |
+| preprocessing.ipynb                  | holds the statistics of this dataset                                   |
+| process_data.ipynb                   | preprocesses the data required by the 'relevance question' module      |
+| related_questions_model.ipynb        | gives the most relevant questions for a given query                    |
+| keywords_generator.ipynb             | generates topic categories for each answer                             |
+| ranking.ipynb                        | ranks the answers corresponding to the questions relevant to the query |
+| summarizer.ipynb                     | summarizes the ranked answers                                          |
+| WebApp/backend/process_data.py       | .py file corresponding to the process_data.ipynb file                  |   
+| WebApp/backend/relevant_questions.py | .py file corresponding to the relevant_questions.ipynb file            |
+| WebApp/backend/ranking.py            | .py file corresponding to the ranking.ipynb file                       |
+| WebApp/backend/summarizer.py         | .py file corresponding to the summarizer.ipynb file                    |
 
 
