@@ -26,8 +26,9 @@ kdf = pd.read_csv('../../data/keywords.csv') # Getting the keywords under each t
 
 class sentence:
     
-    def __init__(self, id, processedWords, originalWords):
+    def __init__(self, id, question, processedWords, originalWords):
         self.id = id
+        self.question = question
         self.processedWords = processedWords
         self.originalWords = originalWords
         self.wordFreq = self.sentWordFreq()
@@ -36,6 +37,9 @@ class sentence:
 
     def getId(self):
         return self.id  # id to keep track of the question from which the answer is taken
+
+    def getQue(self):
+        return self.question  # question title from which the answer is taken
 
     def getProcessedWords(self):
         return self.processedWords # preprocessed words of the sentence
@@ -58,7 +62,7 @@ class sentence:
 
 # processAns - function to process an answer : tokenize, lowercase, punctuation removal and stemming and return sentence objects
 
-def processAns(id, answer):
+def processAns(id, question, answer):
 
     sentence_token = nltk.data.load('tokenizers/punkt/english.pickle')
 
@@ -88,7 +92,7 @@ def processAns(id, answer):
                 stemmedSent.append(new_word)
         
         if stemmedSent != [] :
-            sentences.append(sentence(id, stemmedSent, originalWords)) # Placing sentence objects in the sentences list
+            sentences.append(sentence(id, question, stemmedSent, originalWords)) # Placing sentence objects in the sentences list
 
     return sentences        
 
@@ -218,7 +222,7 @@ def buildBase(query, TF_IDF_dict, n):
                 break
         j = j+1
 
-        return sentence("base", baseWords, baseWords)
+        return sentence("base", query.getQue(), baseWords, baseWords)
 
 
 # bestSentence - function to get the sentence that has highest similarity with the base
@@ -289,7 +293,7 @@ def summarizer(query):
 
     topic_num = 0
 
-    query_sent_list = processAns("query", query)
+    query_sent_list = processAns("query", query, query)
 
     try: 
         query_sent = query_sent_list[0] # User query sentence object
@@ -300,14 +304,14 @@ def summarizer(query):
 
         for topic in topic_ans:
 
-            answers = topic[["id", "answer"]].values.tolist()
+            answers = topic[["id", "question", "answer"]].values.tolist()
 
             sentences = []
 
             # forming sentences from all the answers in each topic
 
             for answer in answers:
-                sentences = sentences + processAns(answer[0], answer[1])
+                sentences = sentences + processAns(answer[0], answer[1], answer[2])
                 
             IDF = IDFs(sentences)
             TF_IDF_dict = TF_IDF(sentences) # Calculating the TF IDF scores for each word
@@ -322,7 +326,8 @@ def summarizer(query):
 
             final_summary = ""
             for sent in summary:
-                final_summary = final_summary + "<a href"+ "=" + link + str(int(sent.getId())) + " target='_blank'>" + sent.getOriginalWords() + "</a>. "
+                que = str(sent.getQue())
+                final_summary = final_summary + "<a href"+ "=" + link + str(int(sent.getId())) + " target='_blank' title='"+ que +"'/>" + sent.getOriginalWords() + "</a>. "
             final_summary = final_summary[:-1]
 
             # Topics
