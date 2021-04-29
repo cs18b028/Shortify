@@ -37,6 +37,6 @@ npm start
 
 ## Implemenataion details
 
-<img src="images/shortify.png" height="75%" width="75%"/>
+<img src="images/shortify.png" height="75%" width="75%" align="center"/>
 
 ## File guide
