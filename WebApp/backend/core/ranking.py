@@ -11,10 +11,8 @@
 #importing the required libraries
 import numpy as np
 from numpy import nan
-import matplotlib.pyplot as plt
 import pandas as pd
 pd.options.mode.chained_assignment = None 
-from sklearn.preprocessing import OneHotEncoder
 
 from bs4 import BeautifulSoup
 
@@ -195,7 +193,6 @@ def ranking(query):
     for topic in topics:
         topic_data = rel_ans[rel_ans[topic]==1][['id', 'answer', 'score', 'answer list', 'questions', 'question list']]
         topic_data.dropna()
-        entropy_score = []
         topic_df = pd.DataFrame()
         for i in range(0, topic_data.shape[0]):
             cosc = cosine_score(topic_data.iloc[i]['question list'], topic_data.iloc[i]['answer list'])
