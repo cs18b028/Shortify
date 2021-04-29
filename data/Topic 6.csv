@@ -1,98 +1,20 @@
-answer,link,code,sim score,sc
-"You cannot have multiple colors in a label. If you want multiple colors, use a one-line Text widget, or use a canvas with a text item. Here's a quick and dirty example using a text widget. It doesn't do smooth scrolling, doesn't use any real data, and leaks memory since I never trim the text in the input widget, but it gives the general idea:",,"import Tkinter as tk
-import random
-
-class Example(tk.Frame):
-    def __init__(self, parent):
-        tk.Frame.__init__(self, parent)
-        self.ticker = tk.Text(height=1, wrap=""none"")
-        self.ticker.pack(side=""top"", fill=""x"")
-
-        self.ticker.tag_configure(""up"", foreground=""green"")
-        self.ticker.tag_configure(""down"", foreground=""red"")
-        self.ticker.tag_configure(""event"", foreground=""black"")
-
-        self.data = [""AAPL"", ""GOOG"", ""MSFT""]
-        self.after_idle(self.tick)
-
-    def tick(self):
-        symbol = self.data.pop(0)
-        self.data.append(symbol) 
-
-        n = random.randint(-1,1)
-        tag = {-1: ""down"", 0: ""even"", 1: ""up""}[n]
-
-        self.ticker.configure(state=""normal"")
-        self.ticker.insert(""end"", "" %s %s"" % (symbol, n), tag)
-        self.ticker.see(""end"")
-        self.ticker.configure(state=""disabled"")
-        self.after(1000, self.tick)
-
-if __name__ == ""__main__"":
-    root = tk.Tk()
-    Example(root).pack(fill=""both"", expand=True)
-    root.mainloop()
-",1.0,4.155025024091593
-"The answer to all 3 of your questions is yes, you can use stderr=subprocess.STDOUT as an argument to Popen to redirect output from stderr to stdout:",,"stderr=subprocess.STDOUT
-Popen
-stderr
-stdout
-self.process = Popen(command, stdout=PIPE, stderr=subprocess.STDOUT)
-",0.95,3.4441978269278613
-try pandas.DataFrame.updateModify DataFrame in place using non-NA values from passed DataFrame. Aligns on indices,http://pandas.pydata.org/pandas-docs/stable/generated/pandas.DataFrame.update.html,"DataFrame.update(other, join='left', overwrite=True,
-                 filter_func=None, raise_conflict=False)
-",0.9,3.385710211373289
-Use this code :Ouptut:,,"list1= [['user1', 186, 'Feb 2017, Apr 2017', 550, 555], ['user2', 282, 'Mai 2017', 0, 3579], ['user3', 281, 'Mai 2017', 10, 60]]
-
-list2= [['user1', 186, 'Feb 2017, Mar 2017, Mai 2017', 0, 740],['user2', 282, 'Feb 2017', 0, 1000], ['user4', 288, 'Feb 2017', 60, 10]]
-
-final_list = []
-for l1_data, l2_data in zip(list1, list2):
-    if l1_data[0] == l2_data[0]:
-        for index, elem in enumerate(l2_data):
-            if index+1 <= len(l1_data):
-                if not elem and l1_data[index]:
-                    l2_data[index] = l1_data[index]                    
-    else: final_list.append(l1_data)
-    final_list.append(l2_data)
-print final_list
-
-[['user1', 186, 'Feb 2017, Mar 2017, Mai 2017', 550, 740], ['user2', 282, 'Feb 2017', 0, 1000], ['user3', 281, 'Mai 2017', 10, 60], ['user4', 288, 'Feb 2017', 60, 10]]
-",0.8,3.0352542238165845
-"Just use a defaultdict.items is a list of your initial lists.
-grouped_list will be a list of the grouped lists by uid.",,"defaultdict
-import collections
-
-def group_items(items):
-    grouped_dict = collections.defaultdict(list)
-    for item in items:
-        uid = item[0]
-        t = item[1]
-        grouped_dict[uid].append(t)
-
-    grouped_list = []
-    for uid, tuples in grouped_dict.iteritems():
-        grouped_list.append([uid] + tuples)
-
-    return grouped_list
-
-items
-grouped_list",0.85,2.907018436891244
-I would try to create a temporary key to join on:Output:,,"#unzip list_of_couples into index for table_a and table_b
-a, b  = zip(*list_of_couples)
-
-#Loop on length of index to assign same value of key to each table for the appropriate index
-for i in range(len(a)):
-    df_a.loc[a[i], 'key'] = i
-    df_b.loc[b[i], 'key'] = i
-
-#merge dataframes on 'key', remove NaN records and drop temporary 'key' column
-df_a.merge(df_b, on='key').dropna(subset=['key']).drop('key', axis=1)
-
-   col_a  col_b  col_c  col_d
-0      1      2      9      8
-5      1      1      3      3
-",1.0,2.857514656297229
-"This can be achieved in much simple way in shell as:(Note: Don't use .csv in extension as it will cause inconsistency with find. After this command is finished, file can be renamed as .csv",,"find . -name ""*.csv"" | xargs cat > mergedCSV
-",1.0,2.7531382473691717
-"That's the editor that is opened so that you can write the commit message. That means the merge went well, no conflicts. Just set the comment, save the file and quit and the merge revision should be done.",,,0.0,0.0
+id,question,answer,sim score,sc
+50297176.0,Merge large images on disk,"pyvips can do exactly what you want very quickly and efficiently. For example:The access=""sequential"" option tells pyvips that you want to stream the image. It will only load pixels on demand as it generates output, so you can merge enormous images using only a little memory. The arrayjoin operator joins an array of images into a grid across tiles across. It has quite a few layout options: you can specify borders, overlaps, background, centring behaviour and so on.I can run it like this:So it joined 100 JPG images to make a 14,000 x 20,000 pixel mosaic in about 2.5s on this laptop, and from watching top, needed about 300mb of memory. I've used it to join over 30,000 images into a single file, and it would go higher. I've made images of over 300,000 by 300,000 pixels.The pyvips equivalent of PIL's paste is insert. You could use that too, though it won't work so well for very large numbers of images. There's also a command-line interface, so you could just enter:To join up a large set of JPG images.",1.0,4.330696788205709
+44155727.0,Merge two lists of intervals with priority for one list,"Your naive method sounds very reasonable; I think the time complexity of it is O(NM), where N is the number of intervals you're trying to resolve, and M is the the range over which you're trying to resolve them.  The difficulty you might have is that you also have space complexity of O(M), which might use up a fair bit of memory.Here's a method for merging without building a ""master list"", which may be faster; because it treats intervals as objects, complexity is no longer tied to M.I'll represent an interval (or list of intervals) as a set of tuples (a,b,p), each of which indicates the time points from a to b, inclusively, with the integer priority p (W can be 1, and S can be 2).  In each interval, it must be the case that a < b.  Higher priorities are preferred.We need a predicate to define the overlap between two intervals:When we find overlaps, we need to resolve them.  This method takes care of that, respecting priority:Finally, merge_intervals takes an iterable of intervals and joins them together until there are no more overlaps:I think this has worst-case time complexity of O(N^4), although the average case should be fast.  In any case, you may want to time this solution against your simpler method, to see what works better for your problem.As far as I can see, my merge_intervals works for your examples:To cover the case with blank (B) intervals, simply add another interval tuple which covers the whole range with priority 0: (1, M, 0):",1.0,4.0
+24760910.0,How merge text in a tkinter label with different colors,"You cannot have multiple colors in a label. If you want multiple colors, use a one-line Text widget, or use a canvas with a text item. Here's a quick and dirty example using a text widget. It doesn't do smooth scrolling, doesn't use any real data, and leaks memory since I never trim the text in the input widget, but it gives the general idea:",0.95,3.559964679408281
+22662996.0,Merge numpy arrays returned from loop,"You should know the shape of returned array. Suppose, myArray.shape = (2, 4)
+Then",0.85,3.4506886206620186
+50297176.0,Merge large images on disk,"I would suggest using the TIFF file format. Most TIFF files are striped (one or more scan lines are stored as a block on file), but it is possible to write tiled TIFF files (where the image is divided into tiles, and each is stored as an independent block on file).LibTIFF is the canonical way of reading and writing TIFF files. It has an easy way of creating a new TIFF file, and add tiles one at the time. Thus, your program can create the TIFF file, obtain one sector, write it as (one or more) tiles to the TIFF file, obtain the next sector, etc. You would have to choose your tile size to evenly divide one sector.There is a Python binding to LibTIFF called, what else, PyLibTIFF. It should allow you to follow the above model from within Python. That same repository has pure Python module to read and write TIFF files, I don't know if that is able to write TIFF files in tiles, or if it allows to write them in chunks. There are many other Python modules for reading and writing TIFF files, but most will write one matrix as a TIFF file, rather than allow you to write a file one tile at a time.",1.0,3.4234159911697764
+60330020.0,Merge two Pandas data frames on overlapping segments,"Create a conditional to find if there is an overlap between the two frames, create new columns based on the conditionals, and merge, using how='outer'What I observed from the data is that if the overlap (end-start) in df_1 is greater than or equal to the overlap in df_2, then add start_data_2, otherwise, leave as is. The calculation hinges on that; if it is a false premise OP, do let me know.",0.95,3.4222867105544243
+52455883.0,Merge changes Pandas types,"Is it because NaN must be connected with a float ?Correct. There is no NaN value in an int, so missing values can only be represented in floats.You could either filter your data before merging, making sure that there are no NaNs created.Or you could fill in the NaNs with a value of your choosing after the merge, and then restore the dtype.",0.95,3.0354966745519416
+39250242.0,How to merge and delete nodes in networkx graph?,"If I understand correctly, you want to recursively merge the nodes until there is no overlap between the edges. My idea was to start with a fully connected graph and ""recursively"" merge the nodes. Here is a 'fake' recursive implementation. EDIT: I'm not too sure why networkx is necessary here, it could be done with just dicts (maybe more clear). ",1.0,2.939260808485549
+52855568.0,How to merge two lists of different lengths as a Pandas dataframe?,"Your csv file apparently has 5 columns, but your data is a single list of values. That means that you also only need 1 column header. Pandas complains right now because the dimension of the column list (5) does not match the number of columns in your data (1). You could fix this for example by saying:That is assuming that you want to use the first column name.",1.0,2.886963330194672
+58971955.0,How to merge two dataframe?,"If you always have only one row in the second dataframe, you can do:Note that tile just repeats the array elements up to a certain length (here len(df1)). This is equivalent to If you need something more performant and clean, have a look at pandas' merge function.",1.0,2.807120877590989
+1158128.0,Merge sorted lists in python,"Here you go: a fully functioning merge sort for lists (adapted from my sort here):Call it like this:For good measure, I'll throw in a couple of changes to your Obj class:",0.95,2.7400840980822956
+44484520.0,merge two dataframes without repeats pandas,"I do not see repeats as a whole row but there are repetetions in customerId. You could remove them using:where df could be the dataframe corresponding to amount or one obtained post merge. In case you want fewer rows (say n), you could use:",1.0,2.7046065937138346
+24760910.0,How merge text in a tkinter label with different colors,If you're looking to get two colours on the same line you can use several labels and use .grid() to get them on the same line.If you know you wanted two words and two colours for example you can use something like this:Or if you wanted to have a different colours for each word in a string for example:,0.95,2.6323932036935815
+48926974.0,Merge list of tuples to a dictionary,"You need to learn how to ask question.
+You should show us what you tried and what you did.
+You should try and write the algorithm yourself...Luckily for you, I was board at work so I just hacked a solution for you..
+Try it and see if it works:Good luck next time!",0.9,2.462517212836618
+20278996.0,Merge 2 dictionaries in Python without deleting first dictionary,"this assumes dict1 and dict2 has the same keyssomething like that should work, i didn't run the code so it might be wrong but the idea should be correct.",0.95,2.4333006659265743

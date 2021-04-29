@@ -1,60 +1,18 @@
-answer,link,code,sim score,sc
-"Get all the keys using a set union d1.keys() | d2.keys(), then it's a dict comprehension:Note: If you get TypeError then you're using an older version of Python.  You can just change .keys() to .viewkeys() to make it work in that case.  ",,"d1.keys() | d2.keys()
->>> {k: d1.get(k, []) + d2.get(k, []) for k in (d1.keys() | d2.keys())}
-{'1': [12, 32, 44, 12, 34, 15, 11, 44, 42, 14],
- '2': [21, 34, 11, 65, 11, 24, 41, 65],
- '3': [44, 12, 98, 41, 22, 48],
- '4': [65, 71]}
-
-TypeError
-.keys()
-.viewkeys()",1.0,3.903949398143577
-I would try to create a temporary key to join on:Output:,,"#unzip list_of_couples into index for table_a and table_b
-a, b  = zip(*list_of_couples)
-
-#Loop on length of index to assign same value of key to each table for the appropriate index
-for i in range(len(a)):
-    df_a.loc[a[i], 'key'] = i
-    df_b.loc[b[i], 'key'] = i
-
-#merge dataframes on 'key', remove NaN records and drop temporary 'key' column
-df_a.merge(df_b, on='key').dropna(subset=['key']).drop('key', axis=1)
-
-   col_a  col_b  col_c  col_d
-0      1      2      9      8
-5      1      1      3      3
-",1.0,3.6860264145247985
-The presence of a cursos indicates you're using pyodbc. data contains pyodbc.Row objects and hence the pd.DataFrame constructor fails to split the data.Try this,,"pyodbc
-data
-pyodbc.Row
-pd.DataFrame
-df = pandas.DataFrame([tuple(t) for t in cursor.fetchall()], columns=columns)
-",0.95,3.6848725485392397
-"I believe the solution to your problem would be to use the pd.join(). After the join fill the master dataframe by looping through the joined dataframe and using the index to assing to each row:I don't have the output because I didn't build a master dataframe, but it should work",,"df_joined = ugt.join(ugh, how='outer')
-
-                      temperature    humidity                     
-2017-06-13 22:06:03          82.0    63.0
-2017-06-13 22:06:20          82.4    NaN
-2017-06-13 22:06:21           NaN    63.0
-2017-06-13 22:06:37          82.4    NaN
-2017-06-13 22:06:38           NaN    63.0
-2017-06-13 22:06:57          82.4    63.0
-
-for index, row in df_joined.iterrows():
-    df_master.loc[index,'humidity'] = row['humidity']
-    df_master.loc[index,'temperature'] = row['temperature']
-",0.95,3.4139205845729554
-"This can be achieved in much simple way in shell as:(Note: Don't use .csv in extension as it will cause inconsistency with find. After this command is finished, file can be renamed as .csv",,"find . -name ""*.csv"" | xargs cat > mergedCSV
-",1.0,3.240296038652592
-This is just elaborating on Arihant's answer :If you want to save it as a variable:,,"Enter3 = Enter1 + Enter2
-for all in Enter3:
-    print(all)
-
-output = []
-for all in Enter3:
-   output.append(all)
-string_output = "" "".join(output)
-print(string_output)
-",0.9,2.738849687004538
-"The Python module, PyPDF2 looks like it would work for you. http://knowah.github.io/PyPDF2/",http://knowah.github.io/PyPDF2/,,0.0,0.14285714285714285
-"That's the editor that is opened so that you can write the commit message. That means the merge went well, no conflicts. Just set the comment, save the file and quit and the merge revision should be done.",,,0.0,0.0
+id,question,answer,sim score,sc
+44155727.0,Merge two lists of intervals with priority for one list,"Your naive method sounds very reasonable; I think the time complexity of it is O(NM), where N is the number of intervals you're trying to resolve, and M is the the range over which you're trying to resolve them.  The difficulty you might have is that you also have space complexity of O(M), which might use up a fair bit of memory.Here's a method for merging without building a ""master list"", which may be faster; because it treats intervals as objects, complexity is no longer tied to M.I'll represent an interval (or list of intervals) as a set of tuples (a,b,p), each of which indicates the time points from a to b, inclusively, with the integer priority p (W can be 1, and S can be 2).  In each interval, it must be the case that a < b.  Higher priorities are preferred.We need a predicate to define the overlap between two intervals:When we find overlaps, we need to resolve them.  This method takes care of that, respecting priority:Finally, merge_intervals takes an iterable of intervals and joins them together until there are no more overlaps:I think this has worst-case time complexity of O(N^4), although the average case should be fast.  In any case, you may want to time this solution against your simpler method, to see what works better for your problem.As far as I can see, my merge_intervals works for your examples:To cover the case with blank (B) intervals, simply add another interval tuple which covers the whole range with priority 0: (1, M, 0):",1.0,4.0
+50297176.0,Merge large images on disk,"pyvips can do exactly what you want very quickly and efficiently. For example:The access=""sequential"" option tells pyvips that you want to stream the image. It will only load pixels on demand as it generates output, so you can merge enormous images using only a little memory. The arrayjoin operator joins an array of images into a grid across tiles across. It has quite a few layout options: you can specify borders, overlaps, background, centring behaviour and so on.I can run it like this:So it joined 100 JPG images to make a 14,000 x 20,000 pixel mosaic in about 2.5s on this laptop, and from watching top, needed about 300mb of memory. I've used it to join over 30,000 images into a single file, and it would go higher. I've made images of over 300,000 by 300,000 pixels.The pyvips equivalent of PIL's paste is insert. You could use that too, though it won't work so well for very large numbers of images. There's also a command-line interface, so you could just enter:To join up a large set of JPG images.",1.0,3.882093892007529
+14008075.0,How to merge many to many relations from one db session to another with SQLAlchemy?,"First off, don't feel bad as I had to test this to see why it doesn't work, and I wrote the thing.The merge() use case is one where you're taking some kind of in-application data, either from an offline cache or some locally modified structure, and moving it into a new Session.   merge() is mostly about merging changes, so when it sees attributes that have no ""change"", it assumes no special work is needed.   So it skips unloaded relationships.  If it did follow unloaded relationships, the merge process would become a very slow and burdensome operation as it traverses the full graph of relationships loading everything recursively, potentially loading a significant portion of the database into memory for a highly interlinked schema.  The ""copy from one database to another"" use case here was not anticipated.the data does go in if you just make sure all those edges are loaded ahead of time, here's a demo.   the default cascade is ""save-update, merge"" also so you don't have to specify that.",1.0,3.7238830260249216
+35785109.0,How to merge two pandas dataframe in parallel (multithreading or multiprocessing),"I believe you can use dask.
+and function merge.Docs say:What definitely works?Cleverly parallelizable operations (also fast):Join on index: dd.merge(df1, df2, left_index=True, right_index=True)Or:Operations requiring a shuffle (slow-ish, unless on index)Set index: df.set_index(df.x)Join not on the index: pd.merge(df1, df2, on='name')You can also check how Create Dask DataFrames.Example",1.0,3.5815144853188663
+1158128.0,Merge sorted lists in python,"Python standard library offers a method for it: heapq.merge.
+As the documentation says, it is very similar to using itertools (but with more limitations); if you cannot live with those limitations (or if you do not use Python 2.6) you can do something like this:However, I think it has the same complexity as your own solution, although using iterators should give some quite good optimization and speed increase.",1.0,3.4147612366621973
+50297176.0,Merge large images on disk,"I would suggest using the TIFF file format. Most TIFF files are striped (one or more scan lines are stored as a block on file), but it is possible to write tiled TIFF files (where the image is divided into tiles, and each is stored as an independent block on file).LibTIFF is the canonical way of reading and writing TIFF files. It has an easy way of creating a new TIFF file, and add tiles one at the time. Thus, your program can create the TIFF file, obtain one sector, write it as (one or more) tiles to the TIFF file, obtain the next sector, etc. You would have to choose your tile size to evenly divide one sector.There is a Python binding to LibTIFF called, what else, PyLibTIFF. It should allow you to follow the above model from within Python. That same repository has pure Python module to read and write TIFF files, I don't know if that is able to write TIFF files in tiles, or if it allows to write them in chunks. There are many other Python modules for reading and writing TIFF files, but most will write one matrix as a TIFF file, rather than allow you to write a file one tile at a time.",1.0,3.3336920483879475
+24760910.0,How merge text in a tkinter label with different colors,"You cannot have multiple colors in a label. If you want multiple colors, use a one-line Text widget, or use a canvas with a text item. Here's a quick and dirty example using a text widget. It doesn't do smooth scrolling, doesn't use any real data, and leaks memory since I never trim the text in the input widget, but it gives the general idea:",0.95,3.2013469563620127
+47667379.0,how to merge two html files through tornado,"You'll have to learn how templating works. Read this page on the docs to learn more: http://www.tornadoweb.org/en/stable/guide/templates.html#template-syntax After that, you can find the complete template syntax reference on this page: http://www.tornadoweb.org/en/stable/template.html#syntax-referenceAnyway, you can ""merge"" two templates and render them as one by using the {% include %} template tag. Example:Your Home1.html template should look roughly like this:Then render only the Home1.html from your request handler.This answer is far from perfect. You'll have to invest some time to actually learn about templates.",1.0,3.147438009054563
+35785109.0,How to merge two pandas dataframe in parallel (multithreading or multiprocessing),You can improve the speed (by a factor of about 3 on the given example) of your merge by making the key column the index of your dataframes and using join instead.,0.9,2.9984978951983337
+54697379.0,How to merge two numpy array's cells containing strings?,"You didn't show linar_eq, but I can guess it is: list() applied to a string breaks it up, producing a list of characters.np.array on that list doesn't change things, and won't make grouping the characters any easier.  Stick with list operations.The two proposed answers follow different 'rules'.  One looks like it takes the characters 2 by 2, but then drops the '='.  The other drops the 'x'.  Why?Your problem is not clearly specified.  But I suspect you'd be better off using the regex mechanism to split up the original string.  It isn't a merging problem.  It's more of a parsing one.",1.0,2.8280752768134194
+17245035.0,How can I merge together sentence objects?,"This 'algorithm' tries to makes sense of the input without relying on line endings, so that it should work correctly with some input likeThe code lends itself to being integrated into a state machine - the loop only remembers its current phrase and ""pushes"" finished phrases off onto a list, and gobbles one word at a time. Splitting on whitespaces is good.Notice the ambiguity in case #5: that cannot be reliably solved (and it is possible to have such an ambiguity also with line endings. Maybe combining both...)Output:",1.0,2.7946706007908673
+1158128.0,Merge sorted lists in python,"Use the bisect module. From the documentation: ""This module provides support for maintaining a list in sorted order without having to sort the list after each insertion.""",0.9,2.737964011836561
+22306340.0,"merge values of same key in a list of dictionaries , and compare to another list of dictionaries in python3","Is there a reason you're avoiding creating some objects to manage this? If it were me, I'd go objects and do something like the following (this is completely untested, there may be typos):Now I can right code that looks like:This is just a starting point. Now you can you add methods that group (and sum) the expenditures list by decoration (e.g. ""I spent HOW MUCH on Twinkies last month???""). You can add a method that parses entries from a file, or emits them to a csv list. You can do some charting based on time.",1.0,2.6744120778925757
+52879192.0,Merge multiple JSON files (more than two),"A way you could do it and which would result in cleaner code in to define a function that takes two JSON objects and return the combination of those two.Then, after you have output_list:Result will be the object you are looking for.If you're not familiar with the reduce function, check out this web page: http://book.pythontips.com/en/latest/map_filter.htmlIt briefly explains the usage of reduce, as well as map and filter. They are very useful.",1.0,2.5622973609006063
+43948049.0,Merge multiple csv files with same name in 10 different subdirectory,"There are many ways to do this, staying in Pandas I did the following.With the file structureThis code will work, it's a little verbose for explanation but you can shorten with implementation.",0.95,2.5379630013532104
