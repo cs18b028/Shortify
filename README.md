@@ -43,7 +43,7 @@ npm start
 
 ### Relevant Questions
 
-![](images/questions.gif)
+![Unable to load questions.gif]()
 
 ### Summaries
 
