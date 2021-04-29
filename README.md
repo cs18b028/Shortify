@@ -32,3 +32,9 @@ cd WebApp/frontend
 npm install
 npm start
 ```
+
+## The working app
+
+## Implemenataion details
+
+## File guide
