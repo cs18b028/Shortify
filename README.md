@@ -18,7 +18,7 @@ For react frontend
 - node v12.18.2
 - npm 6.14.5
 
-git version 2.23.0.windows
+git version 2.23.0. windows
 
 Jupyter Notebook(version 6.2.0) has been used for initial development of the modules that are later modified and used in the backend. The backend carries the entire functionality of the tool while the frontend is simply for user interaction.
 
