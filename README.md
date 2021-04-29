@@ -14,7 +14,7 @@ The entire application has been developed on windows 10. Following are the impor
 
 Jupyter Notebook(version 6.2.0) has been used for initial development.
 
-- Running the code in Jupyter Notebook needs you to install all the python dependencies and libraries. To install them navigate to the WebApp/backend folder and execute ```pip install -r requirements.txt```
+- Running the code in Jupyter Notebook also needs you to install all the python dependencies and libraries. To install them navigate to the WebApp/backend directory in cmd (windows) or terminal (linux) and then execute ```pip install -r requirements.txt```
 
 ## Download and run the webapp on your local system
 - Prequisites: technologies used and their versions are specified in System/Software requirements. It is better to get those versions to avoid compatibility issues.
