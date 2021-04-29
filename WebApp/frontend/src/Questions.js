@@ -69,7 +69,7 @@ function Questions() {
           <Nav.Link><NavLink to="/summaries">Summaries</NavLink></Nav.Link>
         </Nav>
         <Form inline onSubmit={handleSubmit}>
-          <FormControl type="text" autoFocus placeholder="Search" value={query} onChange={(e) => setQuery(e.target.value)} style={{ width: '40vw', marginRight: '1vw' }} />
+          <FormControl type="text" autoFocus placeholder="Search" value={query} onChange={(e) => setQuery(e.target.value)} style={{ width: '36vw', marginRight: '1vw' }} />
           <Button variant="outline-info" type="submit">Search</Button>
         </Form>
       </Navbar>

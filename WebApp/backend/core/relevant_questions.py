@@ -117,9 +117,9 @@ def rel_questions(query):
 
     # Putting the obtained relevant questions into the results array
 
-    for index, id, questions, score in relevant_questions:
+    for index, id, question, question_body score in relevant_questions:
         results.append({
-            'question': "<a href"+ "=" + link + str(int(id)) + " target='_blank'>" + questions + "</a>",
+            'question': "<a href"+ "=" + link + str(int(id)) + " target='_blank'>" + question + "</a>",
             'score': str(score*10)
         })
 
